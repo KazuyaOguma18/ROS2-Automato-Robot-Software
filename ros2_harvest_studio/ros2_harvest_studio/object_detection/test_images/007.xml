@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<annotation>
+  <folder>./test_images</folder>
+  <filename>007.JPG</filename>
+  <path>./test_images/007.JPG</path>
+  <source>Unknown</source>
+  <size>
+    <width>4000</width>
+    <height>3000</height>
+    <depth>3</depth>
+  </size>
+  <segmented>0</segmented>
+  <object>
+    <name>tomato</name>
+    <pose>Unspecified</pose>
+    <truncated>1</truncated>
+    <difficult>0</difficult>
+    <bndbox>
+      <xmin>683</xmin>
+      <ymin>2201</ymin>
+      <xmax>1145</xmax>
+      <ymax>2587</ymax>
+    </bndbox>
+  </object>
+</annotation>

@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<annotation>
+  <folder>./test_images</folder>
+  <filename>001.JPG</filename>
+  <path>./test_images/001.JPG</path>
+  <source>Unknown</source>
+  <size>
+    <width>4000</width>
+    <height>3000</height>
+    <depth>3</depth>
+  </size>
+  <segmented>0</segmented>
+</annotation>
