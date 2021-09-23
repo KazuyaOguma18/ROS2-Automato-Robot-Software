@@ -1,5 +1,14 @@
 #! /usr/bin/env python3
 
+"""
+進捗状況
+・花形の作成は完了
+・DLの定義はグローバル定義を行い、main関数内でwithを用いてsessionを読み込ませる
+・カラー画像とデプス画像を同期させる手法の検討が必要
+・tfについての理解
+"""
+
+
 import rclpy
 from rclpy.node import Node
 

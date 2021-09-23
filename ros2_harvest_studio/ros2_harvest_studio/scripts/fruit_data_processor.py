@@ -1,9 +1,17 @@
 #! /usr/bin/env python3
 
+"""
+進捗状況
+・花形の作成は完了
+・各要素の関数を埋めていく
+・複数のpubやsubを行うことができるのかサンプルコードを作成して動作確認を行っていく
+"""
+
 import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import Bool
+from sensor_msgs.msg import FruitDataList
 
 
 class FruitDataProcessor(Node):
@@ -12,7 +20,7 @@ class FruitDataProcessor(Node):
         super().__init__('fruit_data_processor')
         self.position_publihser_ = self.create_publisher( , 'fruit_position_data', 10)
         self.fruit_status_publisher_ = self.create_publisher(Bool, 'fruit_detect_status', 10)
-        self.list_subscriber_ = self.create_subscription( , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
+        self.list_subscriber_ = self.create_subscription(FruitDataList , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
         self.command_subscriber_ = self.create_subscription(, 'fruit_send_command', self.fruit_send_command_callback, 10)
 
     # 検出された果実情報のコールバック
