@@ -19,6 +19,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::JointState::ConstPtr>::SharedPtr sub_joints;
     rclcpp::TimerBase::SharedPtr timer_;
     void monitor_jointstate_callback(const sensor_msgs::msg::JointState::ConstPtr& jointstates);
+    void timer_callback();
 public:
     Camera2Dynamixel(
         const rclcpp::NodeOptions& options = rclcpp::NodeOptions()

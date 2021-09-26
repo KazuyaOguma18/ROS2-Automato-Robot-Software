@@ -51,14 +51,16 @@ Camera2Dynamixel::Camera2Dynamixel(
     arm_pub = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/pupupu", rclcpp::QoS(10));
     timer_ = this->create_wall_timer(
         100ms,
-        [this](){
-            auto msg = std::make_shared<trajectory_msgs::msg::JointTrajectory>();
-            /*msgに代入する処理系を入力していく*/
+        std::bind(&Camera2Dynamixel::timer_callback, this));
 
+}
 
-            arm_pub->publish(*msg);
-        }
-    );
+void Camera2Dynamixel::timer_callback(){
+    /*
+    auto msg = std::make_shared<trajectory_msgs::msg::JointTrajectory>();
+    /*msgに代入する処理系を入力していく
+    arm_pub->publish(*msg);
+    */
 }
 
 int main(int argc, char * argv[]){

@@ -9,5 +9,17 @@
         "/home/ogumak/ros2_ws/install/realsense2_camera_msgs/lib/python3.8/site-packages",
         "/home/ogumak/ros2_ws/install/moveit_msgs/lib/python3.8/site-packages",
         "/home/ogumak/ros2_ws/install/controller_manager_msgs/lib/python3.8/site-packages"
-    ]
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/foxy/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/xarm_msgs/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/warehouse_ros_mongo/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/srdfdom/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/ros2controlcli/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/controller_manager/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/realsense2_camera_msgs/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/moveit_msgs/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/controller_manager_msgs/lib/python3.8/site-packages"
+    ],
+    "C_Cpp.errorSquiggles": "Disabled"
 }
