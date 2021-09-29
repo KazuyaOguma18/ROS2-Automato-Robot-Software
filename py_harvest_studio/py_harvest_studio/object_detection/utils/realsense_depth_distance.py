@@ -29,8 +29,8 @@ def convert_depth_pixel_to_metric_coordinate(depth, pixel_x, pixel_y, x_1, x_2, 
         radius = abs((X_2 - X_1)/2)
     else:
         radius = abs((Y_2 - Y_1)/2)
-    X = int((depth + radius* math.tan(theta_x))
-    Y = int((-1)* (depth + radius* math.tan(theta_y))
+    X = int(depth + radius* math.tan(theta_x))
+    Y = int((-1)* (depth + radius* math.tan(theta_y)))
 
 
     '''

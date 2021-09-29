@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 
 """
 進捗状況
@@ -12,10 +11,20 @@
 from numpy.lib.function_base import append
 import rclpy
 from rclpy.node import Node
+import message_filters
+from rclpy.qos import qos_profile_sensor_data
 
-from ros2_harvest_studio.msg import FruitDataList
+from cpp_harvest_studio.msg import FruitDataList
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+
+from tf2_ros import TransformException
+from tf2_ros import buffer
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
 
 import numpy as np
 import os
@@ -25,11 +34,11 @@ import cv2
 import time
 
 sys.path.append("..")
-from ..object_detection.utils import label_map_util
-from ..object_detection.utils import visualization_utils as vis_util
-from ..object_detection.utils import realsense_depth_count as rs_depth
-from ..object_detection.utils import realsense_depth_distance as rs_dis
-from ..object_detection.utils import focuspoint
+from py_harvest_studio.object_detection.utils import label_map_util
+from py_harvest_studio.object_detection.utils import visualization_utils as vis_util
+from py_harvest_studio.object_detection.utils import realsense_depth_count as rs_depth
+from py_harvest_studio.object_detection.utils import realsense_depth_distance as rs_dis
+from py_harvest_studio.object_detection.utils import focuspoint
 from PIL import Image
 
 
@@ -41,29 +50,41 @@ class TomatoDetector(Node):
     def __init__(self):
         super().__init__('tomato_detector')
         self.publisher_ = self.create_publisher(FruitDataList, 'fruit_detect_list', 10)
-        self.rs_image_subscriber = self.create_subscription(
-            Image, 
-            'rs/camera/image_raw',
-            self.rs_image_callback,
-            10)
-        self.rs_depth_subscriber = self.create_subscription(
-            Image, 
-            'rs/camera/image_raw',
-            self.rs_depth_callback,
-            10)
-        self.azure_image_subscriber = self.create_subscription(
-            Image, 
-            'rs/camera/image_raw',
-            self.azure_image_callback,
-            10)
-        self.azure_depth_subscriber = self.create_subscription(
-            Image, 
-            'rs/camera/image_raw',
-            self.azure_depth_callback,
-            10)
+        rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': qos_profile_sensor_data})
+        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/depth/image_rect_raw', **{'qos_profile': qos_profile_sensor_data})
+        azure_color_subscriber = message_filters.Subscriber(self, Image, '/azure/camera/color/image_raw', **{'qos_profile': qos_profile_sensor_data})
+        azure_depth_subscriber = message_filters.Subscriber(self, Image, '/azure/camera/depth/image_raw', **{'qos_profile': qos_profile_sensor_data})
+
+        '''
+        self.rs_image_subscriber = self.create_subscription(Image, '/camera/color/image_raw', self.rs_image_callback, 1)
+        self.rs_depth_subscriber = self.create_subscription(Image, 'rs/depth/image_rect_raw', self.rs_depth_callback, 1)
+        self.azure_image_subscriber = self.create_subscription(Image, 'rs/camera/image_raw', self.azure_image_callback, 1)
+        self.azure_depth_subscriber = self.create_subscription(Image, 'rs/camera/image_raw', self.azure_depth_callback, 1)
+        '''
         # timer_period = 0.01
         # self.timer = self.create_timer(timer_period, self.timer_callback)
 
+        # depth画像とcolor画像の同期
+        queue_size = 10
+        fps = 30.
+        delay = 1/fps*0.5
+        rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
+        rs_ts.registerCallback(self.rs_image_callback)
+        azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
+        azure_ts.registerCallback(self.azure_image_callback)
+
+        # TFの定義
+        """
+        self.tf_rs_buffer = Buffer()
+        self.tf_rs_listener = TransformListener(self.tf_rs_buffer, self)
+        self.tf_azure_buffer = Buffer()
+        self.tf_azure_listener = TransformListener(self.tf_azure_buffer, self)
+        self.rs_target_frame = self.get_parameter(
+            'realsense_no_target').get_parameter_value().string_value
+        self.fruit_target_frame = 'fruit_target_frame'
+
+        self.br = TransformBroadcaster(self)
+        """
         #realsenseの解像度指定
         self.width_color = 1280
         self.height_color = 720
@@ -86,36 +107,111 @@ class TomatoDetector(Node):
         except Exception as err:
             pass
 
-    # 各画像トピックのcallback
-    def rs_image_callback(self, msg):
-        self.rs_image_image = self.process_image(self.height_color, self.width_color, msg)
-        if np.sum(self.rs_image_image) > 0 and np.sum(self.rs_depth_image) > 0:
-            x, y, z, radius = self.detect_fruits(self.rs_image_image, self.rs_depth_image)
-            # tfにより位置関係を取得し座標変換
-            # 得られた位置情報をpublish
-            
-        else:
-            pass
-
-
-    def rs_depth_callback(self, msg):
-        # 型変換が必要な気がする
-        self.rs_depth = msg
+    # 各画像トピックのcallback#
+    #  tfにより位置関係を取得し座標変換
+    def rs_image_callback(self, color_msg, depth_msg):
+        self.rs_color_image = self.process_image(self.height_color, self.width_color, color_msg),
+        self.rs_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg), 
+        self.color_image_callback(self.rs_color_image, self.rs_depth_image ,child_frame="", camera_frame="", buffer="")
         
 
-    def azure_image_callback(self, msg):
-        # 型変換が必要な気がする
-        self.azure_image = msg
-        
-        x, y, z, radius = self.detect_fruits()
+    def azure_image_callback(self, color_msg, depth_msg):
+        self.azure_color_image = self.process_image(self.height_color, self.width_color, color_msg),
+        self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg),         
+        self.color_image_callback(self.azure_color_image, self.azure_depth_image, child_frame="", camera_frame="", buffer="")
 
     def azure_depth_callback(self, msg):
-        # 型変換が必要な気がする
-        self.azure_depth = msg
+        self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, msg)
+
+    def color_image_callback(self, color_image, depth_image, child_frame, camera_frame, buffer):
+        """
+        from_frame_rel = self.rs_target_frame # world
+        to_frame_rel = child_frame # fruit target
+        """
+        
+        fruit_position_x = []
+        fruit_position_y = []
+        fruit_position_z = []
+        if np.sum(self.rs_color_image) > 0 and np.sum(self.rs_depth_image) > 0:
+
+            # 果実の位置検出
+            x, y, z, radius = self.detect_fruits(color_image, depth_image)
+            if not x:
+                return
+
+            try:
+                """
+                t = TransformStamped()
+                t.header.stamp = self.get_clock().now().to_msg()
+                t.header.frame_id = camera_frame
+                t.child_frame_id = child_frame
+                """
+                for i in range(x):
+                    """
+                    # 現在の果実座標とカメラの位置関係をTFに登録
+                    t.transform.translation.x = x[i]
+                    t.transform.translation.y = y[i]
+                    t.transform.translation.z = z[i]
+                    t.transform.rotation.x = 0
+                    t.transform.rotation.y = 0
+                    t.transform.rotation.z = 0
+                    t.transform.rotation.w = 1
+
+                    self.br.sendTransform(t)
+
+                    # アームと果実の座標の位置関係を取得
+                    now = rclpy.time.Time()
+                    trans = buffer.lookup_transform(
+                        to_frame_rel,
+                        from_frame_rel,
+                        now)
+                    fruit_position_x.append(trans.transform.translation.x)
+                    fruit_position_y.append(trans.transform.translation.y)
+                    fruit_position_z.append(trans.transform.translation.z)
+                    """
+                    fruit_position_x.append(x[i])
+                    fruit_position_y.append(y[i])
+                    fruit_position_z.append(z[i])
+
+                # 得られた位置情報をpublish
+                pos_data = FruitDataList()
+                pos_data.x = fruit_position_x
+                pos_data.y = fruit_position_y
+                pos_data.z = fruit_position_z
+                pos_data.radius = radius
+
+                self.publisher_.publish(pos_data)
+
+            except TransformException as ex:
+                self.get_logger().info(
+                    f'Could not transform to_frame_rel to from_frame_rel: {ex}')
+                return
+                        
+        else:
+            pass        
 
 
     # 物体検出のループ処理を実行
     def detect_fruits(self, color_image, depth_image):
+        # 各変数の初期化
+        length = 0
+        TDbox = []
+        quantity = []
+        X_c = 0
+        Y_c = 0
+        value = 0
+        auto = False
+        first = False
+        search = False
+        # tomato_image = cv2.resize(cv2.imread("tomato.jpg"), dsize=(1280,720))
+        detect_count = 0
+        max_scale = 2.0
+        Position_X = []
+        Position_Y = []
+        Position_Z = []
+        Radius = []
+        Tomato_Class = []
+
         while True:
             if length == 0:
                 auto = True
@@ -141,7 +237,9 @@ class TomatoDetector(Node):
                     Y_c += 1
                     X_c = -1
                 if X_c == 1 and Y_c == 1 and value_max == True:
-                    auto = False
+                    return Position_X, Position_Y, Position_Z, Radius
+
+
                 random_line.append([X_c, Y_c])
                 valuezoom.append(value)
                 if auto == False:
@@ -176,18 +274,16 @@ class TomatoDetector(Node):
             # Each box represents a part of the image where a particular object was detected.
             boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
             # Each score represent how level of confidence for each of the objects.
-            # Score is shown on the result image, together with the class label.
+            # Score is shown on the result image, subscriptiontogether with the class label.
             scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
             classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
             num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
             image_np_expanded = np.expand_dims(image_np, axis=0) 
 
             # Actual detection
-            t3 = time.time()
             (boxes, scores, classes, num_detections) = sess.run(
                 [boxes, scores, classes, num_detections],
-                feed_dict={image_tensor: image_np_expanded})
-            t4 = time.time()                                        
+                feed_dict={image_tensor: image_np_expanded})                                     
             # Visualization of the results of a detection.
             print('-----------------------------------------------------------------------')
             boxes, names_show = vis_util.visualize_boxes_and_labels_on_image_array(
@@ -229,7 +325,7 @@ class TomatoDetector(Node):
 
                     else:
                         y[k] = np.diff(y[k])
-                        dist = depth_image[int((boxes[k][1] + (boxes[k][3]-boxes[k][1])/2)*self.width_color][int((boxes[k][0] + (boxes[k][2]-boxes[k][0])/2)*self.height_color)]
+                        # dist = depth_image[int((boxes[k][1] + (boxes[k][3]-boxes[k][1])/2)*self.width_color][int((boxes[k][0] + (boxes[k][2]-boxes[k][0])/2)*self.height_color)]
                         _y = list(y[k])
                         if dist >= _y.index(max(_y)):
                             #max_depth.append(dist)
@@ -241,11 +337,6 @@ class TomatoDetector(Node):
 
             #x軸とy軸をピクセル単位からメートル単位へ変換
             i = 0
-            Position_X = []
-            Position_Y = []
-            Position_Z = []
-            Radius = []
-            Tomato_Class = []
 
             for k in range(length):
                 if names_show[k] == 'tomato':
@@ -265,7 +356,7 @@ class TomatoDetector(Node):
                 else:
                     continue
 
-            return Position_X, Position_Y, Position_Z, Radius
+        
 
 
 
@@ -304,7 +395,7 @@ class Net(nn.Module):
 
 
 
-def main(args=None):
+def run(args=None):
     try:
         rclpy.init(args=args)
         detector = TomatoDetector()
@@ -316,18 +407,18 @@ def main(args=None):
         detector.destroy_node()
         rclpy.shutdown()
 
-
-if __name__=='__main__':
-    MODEL_NAME = '/home/ikedalab/catkin_ws/src/xarm_ros/xarm_planner/object_detection/tomato_graph'
+def main():
+    MODEL_NAME = '/object_detection/tomato_graph'
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
     PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
 
     # List of the strings that is used to add correct label for each box.
-    PATH_TO_LABELS = os.path.join('/home/ikedalab/catkin_ws/src/xarm_ros/xarm_planner/object_detection/training', 'object-detection.pbtxt')
+    PATH_TO_LABELS = os.path.join('/object_detection/training', 'object-detection.pbtxt')
 
     NUM_CLASSES = 2
 
+    global detection_graph, label_map, categories, category_index, net, sess
     detection_graph = tf.Graph()
     with detection_graph.as_default():
       od_graph_def = tf.GraphDef()
@@ -341,10 +432,13 @@ if __name__=='__main__':
     category_index = label_map_util.create_category_index(categories)  
 
     net = Net()
-    param = torch.load('/home/ikedalab/catkin_ws/src/xarm_ros/xarm_planner/object_detection/train_model/weight.pth')
+    param = torch.load('/object_detection/train_model/weight.pth')
     net.load_state_dict(param)
 
 
     with detection_graph.as_default():
         with tf.Session(graph=detection_graph) as sess:
-            main()
+            run()    
+
+if __name__=='__main__':
+    main()
