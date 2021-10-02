@@ -169,8 +169,8 @@ class MultipleGridAnchorGenerator(anchor_generator.AnchorGenerator):
                 for list_item in feature_map_shape_list]):
       raise ValueError('feature_map_shape_list must be a list of pairs.')
     if not anchor_strides:
-      anchor_strides = [(tf.to_float(im_height) / tf.to_float(pair[0]),
-                         tf.to_float(im_width) / tf.to_float(pair[1]))
+      anchor_strides = [(tf.cast(im_height, dtype=tf.float32) / tf.cast(pair[0], dtype=tf.float32),
+                         tf.cast(im_width, dtype=tf.float32) / tf.cast(pair[1], dtype=tf.float32))
                         for pair in feature_map_shape_list]
     if not anchor_offsets:
       anchor_offsets = [(0.5 * stride[0], 0.5 * stride[1])
@@ -185,7 +185,7 @@ class MultipleGridAnchorGenerator(anchor_generator.AnchorGenerator):
         raise ValueError('%s must be a list of pairs.' % arg_name)
 
     anchor_grid_list = []
-    min_im_shape = tf.to_float(tf.minimum(im_height, im_width))
+    min_im_shape = tf.cast(tf.minimum(im_height, im_width), dtype=tf.float32)
     base_anchor_size = min_im_shape * self._base_anchor_size
     for grid_size, scales, aspect_ratios, stride, offset in zip(
         feature_map_shape_list, self._scales, self._aspect_ratios,
@@ -205,7 +205,7 @@ class MultipleGridAnchorGenerator(anchor_generator.AnchorGenerator):
       num_anchors = concatenated_anchors.num_boxes()
     if self._clip_window is not None:
       clip_window = tf.multiply(
-          tf.to_float([im_height, im_width, im_height, im_width]),
+          tf.cast([im_height, im_width, im_height, im_width], dtype=tf.float32),
           self._clip_window)
       concatenated_anchors = box_list_ops.clip_to_window(
           concatenated_anchors, clip_window, filter_nonoverlapping=False)

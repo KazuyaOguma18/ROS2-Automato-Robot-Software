@@ -39,7 +39,7 @@ def build(optimizer_config, global_summaries):
 
   if optimizer_type == 'rms_prop_optimizer':
     config = optimizer_config.rms_prop_optimizer
-    optimizer = tf.train.RMSPropOptimizer(
+    optimizer = tf.compat.v1.train.RMSPropOptimizer(
         _create_learning_rate(config.learning_rate, global_summaries),
         decay=config.decay,
         momentum=config.momentum_optimizer_value,
@@ -47,13 +47,13 @@ def build(optimizer_config, global_summaries):
 
   if optimizer_type == 'momentum_optimizer':
     config = optimizer_config.momentum_optimizer
-    optimizer = tf.train.MomentumOptimizer(
+    optimizer = tf.compat.v1.train.MomentumOptimizer(
         _create_learning_rate(config.learning_rate, global_summaries),
         momentum=config.momentum_optimizer_value)
 
   if optimizer_type == 'adam_optimizer':
     config = optimizer_config.adam_optimizer
-    optimizer = tf.train.AdamOptimizer(
+    optimizer = tf.compat.v1.train.AdamOptimizer(
         _create_learning_rate(config.learning_rate, global_summaries))
 
   if optimizer is None:
@@ -87,7 +87,7 @@ def _create_learning_rate(learning_rate_config, global_summaries):
 
   if learning_rate_type == 'exponential_decay_learning_rate':
     config = learning_rate_config.exponential_decay_learning_rate
-    learning_rate = tf.train.exponential_decay(
+    learning_rate = tf.compat.v1.train.exponential_decay(
         config.initial_learning_rate,
         slim.get_or_create_global_step(),
         config.decay_steps,
@@ -108,5 +108,5 @@ def _create_learning_rate(learning_rate_config, global_summaries):
   if learning_rate is None:
     raise ValueError('Learning_rate %s not supported.' % learning_rate_type)
 
-  global_summaries.add(tf.summary.scalar('Learning Rate', learning_rate))
+  global_summaries.add(tf.compat.v1.summary.scalar('Learning Rate', learning_rate))
   return learning_rate

@@ -90,13 +90,13 @@ class SquareBoxCoder(box_coder.BoxCoder):
 
     tx = (xcenter - xcenter_a) / la
     ty = (ycenter - ycenter_a) / la
-    tl = tf.log(l / la)
+    tl = tf.math.log(l / la)
     # Scales location targets for joint training.
     if self._scale_factors:
       ty *= self._scale_factors[0]
       tx *= self._scale_factors[1]
       tl *= self._scale_factors[2]
-    return tf.transpose(tf.stack([ty, tx, tl]))
+    return tf.transpose(a=tf.stack([ty, tx, tl]))
 
   def _decode(self, rel_codes, anchors):
     """Decodes relative codes to boxes.
@@ -111,7 +111,7 @@ class SquareBoxCoder(box_coder.BoxCoder):
     ycenter_a, xcenter_a, ha, wa = anchors.get_center_coordinates_and_sizes()
     la = tf.sqrt(ha * wa)
 
-    ty, tx, tl = tf.unstack(tf.transpose(rel_codes))
+    ty, tx, tl = tf.unstack(tf.transpose(a=rel_codes))
     if self._scale_factors:
       ty /= self._scale_factors[0]
       tx /= self._scale_factors[1]
@@ -123,4 +123,4 @@ class SquareBoxCoder(box_coder.BoxCoder):
     xmin = xcenter - l / 2.
     ymax = ycenter + l / 2.
     xmax = xcenter + l / 2.
-    return box_list.BoxList(tf.transpose(tf.stack([ymin, xmin, ymax, xmax])))
+    return box_list.BoxList(tf.transpose(a=tf.stack([ymin, xmin, ymax, xmax])))

@@ -81,7 +81,7 @@ class Match(object):
     Returns:
       column_indices: int32 tensor of shape [K] with column indices.
     """
-    return self._reshape_and_cast(tf.where(tf.greater(self._match_results, -1)))
+    return self._reshape_and_cast(tf.compat.v1.where(tf.greater(self._match_results, -1)))
 
   def matched_column_indicator(self):
     """Returns column indices that are matched.
@@ -93,7 +93,7 @@ class Match(object):
 
   def num_matched_columns(self):
     """Returns number (int32 scalar tensor) of matched columns."""
-    return tf.size(self.matched_column_indices())
+    return tf.size(input=self.matched_column_indices())
 
   def unmatched_column_indices(self):
     """Returns column indices that do not match any row.
@@ -103,7 +103,7 @@ class Match(object):
     Returns:
       column_indices: int32 tensor of shape [K] with column indices.
     """
-    return self._reshape_and_cast(tf.where(tf.equal(self._match_results, -1)))
+    return self._reshape_and_cast(tf.compat.v1.where(tf.equal(self._match_results, -1)))
 
   def unmatched_column_indicator(self):
     """Returns column indices that are unmatched.
@@ -115,7 +115,7 @@ class Match(object):
 
   def num_unmatched_columns(self):
     """Returns number (int32 scalar tensor) of unmatched columns."""
-    return tf.size(self.unmatched_column_indices())
+    return tf.size(input=self.unmatched_column_indices())
 
   def ignored_column_indices(self):
     """Returns column indices that are ignored (neither Matched nor Unmatched).
@@ -125,7 +125,7 @@ class Match(object):
     Returns:
       column_indices: int32 tensor of shape [K] with column indices.
     """
-    return self._reshape_and_cast(tf.where(self.ignored_column_indicator()))
+    return self._reshape_and_cast(tf.compat.v1.where(self.ignored_column_indicator()))
 
   def ignored_column_indicator(self):
     """Returns boolean column indicator where True means the colum is ignored.
@@ -138,7 +138,7 @@ class Match(object):
 
   def num_ignored_columns(self):
     """Returns number (int32 scalar tensor) of matched columns."""
-    return tf.size(self.ignored_column_indices())
+    return tf.size(input=self.ignored_column_indices())
 
   def unmatched_or_ignored_column_indices(self):
     """Returns column indices that are unmatched or ignored.
@@ -148,7 +148,7 @@ class Match(object):
     Returns:
       column_indices: int32 tensor of shape [K] with column indices.
     """
-    return self._reshape_and_cast(tf.where(tf.greater(0, self._match_results)))
+    return self._reshape_and_cast(tf.compat.v1.where(tf.greater(0, self._match_results)))
 
   def matched_row_indices(self):
     """Returns row indices that match some column.
@@ -190,7 +190,7 @@ class Matcher(object):
     Returns:
       A Match object with the results of matching.
     """
-    with tf.name_scope(scope, 'Match', [similarity_matrix, params]) as scope:
+    with tf.compat.v1.name_scope(scope, 'Match', [similarity_matrix, params]) as scope:
       return Match(self._match(similarity_matrix, **params))
 
   @abstractmethod

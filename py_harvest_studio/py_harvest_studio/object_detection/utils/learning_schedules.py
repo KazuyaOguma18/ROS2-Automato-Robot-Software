@@ -47,16 +47,16 @@ def exponential_decay_with_burnin(global_step,
   """
   if burnin_learning_rate == 0:
     burnin_learning_rate = learning_rate_base
-  post_burnin_learning_rate = tf.train.exponential_decay(
+  post_burnin_learning_rate = tf.compat.v1.train.exponential_decay(
       learning_rate_base,
       global_step,
       learning_rate_decay_steps,
       learning_rate_decay_factor,
       staircase=True)
   return tf.cond(
-      tf.less(global_step, burnin_steps),
-      lambda: tf.convert_to_tensor(burnin_learning_rate),
-      lambda: post_burnin_learning_rate)
+      pred=tf.less(global_step, burnin_steps),
+      true_fn=lambda: tf.convert_to_tensor(value=burnin_learning_rate),
+      false_fn=lambda: post_burnin_learning_rate)
 
 
 def manual_stepping(global_step, boundaries, rates):
@@ -96,8 +96,8 @@ def manual_stepping(global_step, boundaries, rates):
                      'number of boundary points by exactly 1.')
   step_boundaries = tf.constant(boundaries, tf.int64)
   learning_rates = tf.constant(rates, tf.float32)
-  unreached_boundaries = tf.reshape(tf.where(
+  unreached_boundaries = tf.reshape(tf.compat.v1.where(
       tf.greater(step_boundaries, global_step)), [-1])
   unreached_boundaries = tf.concat([unreached_boundaries, [len(boundaries)]], 0)
-  index = tf.reshape(tf.reduce_min(unreached_boundaries), [1])
+  index = tf.reshape(tf.reduce_min(input_tensor=unreached_boundaries), [1])
   return tf.reshape(tf.slice(learning_rates, index, [1]), [])

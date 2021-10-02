@@ -83,12 +83,12 @@ class BatchQueue(object):
         {key: tensor.get_shape() for key, tensor in tensor_dict.items()})
     # Remember runtime shapes to unpad tensors after batching.
     runtime_shapes = collections.OrderedDict(
-        {(key + rt_shape_str): tf.shape(tensor)
+        {(key + rt_shape_str): tf.shape(input=tensor)
          for key, tensor in tensor_dict.items()})
 
     all_tensors = tensor_dict
     all_tensors.update(runtime_shapes)
-    batched_tensors = tf.train.batch(
+    batched_tensors = tf.compat.v1.train.batch(
         all_tensors,
         capacity=batch_queue_capacity,
         batch_size=batch_size,

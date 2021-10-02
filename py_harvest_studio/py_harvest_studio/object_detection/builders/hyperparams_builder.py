@@ -111,9 +111,9 @@ def _build_regularizer(regularizer):
   """
   regularizer_oneof = regularizer.WhichOneof('regularizer_oneof')
   if  regularizer_oneof == 'l1_regularizer':
-    return slim.l1_regularizer(scale=float(regularizer.l1_regularizer.weight))
+    return tf.keras.regularizers.l1(l=float(regularizer.l1_regularizer.weight))
   if regularizer_oneof == 'l2_regularizer':
-    return slim.l2_regularizer(scale=float(regularizer.l2_regularizer.weight))
+    return tf.keras.regularizers.l2(l=0.5 * (float(regularizer.l2_regularizer.weight)))
   raise ValueError('Unknown regularizer function: {}'.format(regularizer_oneof))
 
 
@@ -131,7 +131,7 @@ def _build_initializer(initializer):
   """
   initializer_oneof = initializer.WhichOneof('initializer_oneof')
   if initializer_oneof == 'truncated_normal_initializer':
-    return tf.truncated_normal_initializer(
+    return tf.compat.v1.truncated_normal_initializer(
         mean=initializer.truncated_normal_initializer.mean,
         stddev=initializer.truncated_normal_initializer.stddev)
   if initializer_oneof == 'variance_scaling_initializer':
@@ -140,10 +140,10 @@ def _build_initializer(initializer):
     mode = enum_descriptor.values_by_number[initializer.
                                             variance_scaling_initializer.
                                             mode].name
-    return slim.variance_scaling_initializer(
-        factor=initializer.variance_scaling_initializer.factor,
-        mode=mode,
-        uniform=initializer.variance_scaling_initializer.uniform)
+    return tf.compat.v1.keras.initializers.VarianceScaling(
+        scale=initializer.variance_scaling_initializer.factor,
+        mode=(mode).lower(),
+        distribution=("uniform" if initializer.variance_scaling_initializer.uniform else "truncated_normal"))
   raise ValueError('Unknown initializer function: {}'.format(
       initializer_oneof))
 

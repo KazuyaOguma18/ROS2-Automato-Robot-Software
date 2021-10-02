@@ -52,11 +52,11 @@ def _extract_prediction_tensors(model,
   prefetch_queue = prefetcher.prefetch(input_dict, capacity=500)
   input_dict = prefetch_queue.dequeue()
   original_image = tf.expand_dims(input_dict[fields.InputDataFields.image], 0)
-  preprocessed_image = model.preprocess(tf.to_float(original_image))
+  preprocessed_image = model.preprocess(tf.cast(original_image, dtype=tf.float32))
   prediction_dict = model.predict(preprocessed_image)
   detections = model.postprocess(prediction_dict)
 
-  original_image_shape = tf.shape(original_image)
+  original_image_shape = tf.shape(input=original_image)
   absolute_detection_boxlist = box_list_ops.to_absolute_coordinates(
       box_list.BoxList(tf.squeeze(detections['detection_boxes'], axis=0)),
       original_image_shape[1], original_image_shape[2])
@@ -80,8 +80,8 @@ def _extract_prediction_tensors(model,
         detection_masks,
         detection_boxes,
         original_image_shape[1], original_image_shape[2])
-    detection_masks_reframed = tf.to_float(tf.greater(detection_masks_reframed,
-                                                      0.5))
+    detection_masks_reframed = tf.cast(tf.greater(detection_masks_reframed,
+                                                      0.5), dtype=tf.float32)
 
     tensor_dict['detection_masks'] = detection_masks_reframed
   # load groundtruth fields into tensor_dict
@@ -89,8 +89,8 @@ def _extract_prediction_tensors(model,
     normalized_gt_boxlist = box_list.BoxList(
         input_dict[fields.InputDataFields.groundtruth_boxes])
     gt_boxlist = box_list_ops.scale(normalized_gt_boxlist,
-                                    tf.shape(original_image)[1],
-                                    tf.shape(original_image)[2])
+                                    tf.shape(input=original_image)[1],
+                                    tf.shape(input=original_image)[2])
     groundtruth_boxes = gt_boxlist.get()
     groundtruth_classes = input_dict[fields.InputDataFields.groundtruth_classes]
     tensor_dict['groundtruth_boxes'] = groundtruth_boxes
@@ -163,7 +163,7 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
       logging.info('Skipping image')
       counters['skipped'] += 1
       return {}
-    global_step = tf.train.global_step(sess, slim.get_global_step())
+    global_step = tf.compat.v1.train.global_step(sess, slim.get_global_step())
     if batch_index < eval_config.num_visualizations:
       tag = 'image-{}'.format(batch_index)
       eval_util.visualize_detection_results(
@@ -180,13 +180,13 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
     return EVAL_METRICS_FN_DICT[eval_metric_fn_key](result_lists,
                                                     categories=categories)
 
-  variables_to_restore = tf.global_variables()
+  variables_to_restore = tf.compat.v1.global_variables()
   global_step = slim.get_or_create_global_step()
   variables_to_restore.append(global_step)
   if eval_config.use_moving_averages:
     variable_averages = tf.train.ExponentialMovingAverage(0.0)
     variables_to_restore = variable_averages.variables_to_restore()
-  saver = tf.train.Saver(variables_to_restore)
+  saver = tf.compat.v1.train.Saver(variables_to_restore)
   def _restore_latest_checkpoint(sess):
     latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
     saver.restore(sess, latest_checkpoint)

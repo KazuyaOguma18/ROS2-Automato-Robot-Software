@@ -327,12 +327,12 @@ class HyperparamsBuilderTest(tf.test.TestCase):
                                 tol=1e-2):
     with tf.Graph().as_default() as g:
       with self.test_session(graph=g) as sess:
-        var = tf.get_variable(
+        var = tf.compat.v1.get_variable(
             name='test',
             shape=shape,
             dtype=tf.float32,
             initializer=initializer)
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
         values = sess.run(var)
         self.assertAllClose(np.var(values), variance, tol, tol)
 

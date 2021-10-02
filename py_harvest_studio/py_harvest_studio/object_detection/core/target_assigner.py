@@ -140,8 +140,8 @@ class TargetAssigner(object):
       groundtruth_labels = tf.ones(tf.expand_dims(groundtruth_boxes.num_boxes(),
                                                   0))
       groundtruth_labels = tf.expand_dims(groundtruth_labels, -1)
-    shape_assert = tf.assert_equal(tf.shape(groundtruth_labels)[1:],
-                                   tf.shape(self._unmatched_cls_target))
+    shape_assert = tf.compat.v1.assert_equal(tf.shape(input=groundtruth_labels)[1:],
+                                   tf.shape(input=self._unmatched_cls_target))
 
     with tf.control_dependencies([shape_assert]):
       match_quality_matrix = self._similarity_calc.compare(groundtruth_boxes,
@@ -204,7 +204,7 @@ class TargetAssigner(object):
                                                  matched_anchors)
     unmatched_ignored_reg_targets = tf.tile(
         self._default_regression_target(),
-        tf.stack([tf.size(unmatched_ignored_anchor_indices), 1]))
+        tf.stack([tf.size(input=unmatched_ignored_anchor_indices), 1]))
     reg_targets = tf.dynamic_stitch(
         [matched_anchor_indices, unmatched_ignored_anchor_indices],
         [matched_reg_targets, unmatched_ignored_reg_targets])
@@ -252,7 +252,7 @@ class TargetAssigner(object):
     ones = self._unmatched_cls_target.shape.ndims * [1]
     unmatched_ignored_cls_targets = tf.tile(
         tf.expand_dims(self._unmatched_cls_target, 0),
-        tf.stack([tf.size(unmatched_ignored_anchor_indices)] + ones))
+        tf.stack([tf.size(input=unmatched_ignored_anchor_indices)] + ones))
 
     cls_targets = tf.dynamic_stitch(
         [matched_anchor_indices, unmatched_ignored_anchor_indices],

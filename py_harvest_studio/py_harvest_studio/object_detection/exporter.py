@@ -73,12 +73,12 @@ def freeze_graph_with_def_protos(
       rewrite_options.optimizers.append('pruning')
       rewrite_options.optimizers.append('constfold')
       rewrite_options.optimizers.append('layout')
-      graph_options = tf.GraphOptions(
+      graph_options = tf.compat.v1.GraphOptions(
           rewrite_options=rewrite_options, infer_shapes=True)
     else:
       logging.info('Graph Rewriter optimizations disabled')
-      graph_options = tf.GraphOptions()
-    config = tf.ConfigProto(graph_options=graph_options)
+      graph_options = tf.compat.v1.GraphOptions()
+    config = tf.compat.v1.ConfigProto(graph_options=graph_options)
     with session.Session(config=config) as sess:
       if input_saver_def:
         saver = saver_lib.Saver(saver_def=input_saver_def)
@@ -114,7 +114,7 @@ def freeze_graph_with_def_protos(
 
 def _image_tensor_input_placeholder():
   """Returns placeholder and input node that accepts a batch of uint8 images."""
-  input_tensor = tf.placeholder(dtype=tf.uint8,
+  input_tensor = tf.compat.v1.placeholder(dtype=tf.uint8,
                                 shape=(None, None, None, 3),
                                 name='image_tensor')
   return input_tensor, input_tensor
@@ -126,7 +126,7 @@ def _tf_example_input_placeholder():
   Returns:
     a tuple of placeholder and input nodes that output decoded images.
   """
-  batch_tf_example_placeholder = tf.placeholder(
+  batch_tf_example_placeholder = tf.compat.v1.placeholder(
       tf.string, shape=[None], name='tf_example')
   def decode(tf_example_string_tensor):
     tensor_dict = tf_example_decoder.TfExampleDecoder().decode(
@@ -147,7 +147,7 @@ def _encoded_image_string_tensor_input_placeholder():
   Returns:
     a tuple of placeholder and input nodes that output decoded images.
   """
-  batch_image_str_placeholder = tf.placeholder(
+  batch_image_str_placeholder = tf.compat.v1.placeholder(
       dtype=tf.string,
       shape=[None],
       name='encoded_image_string_tensor')
@@ -216,9 +216,9 @@ def _add_output_tensor_nodes(postprocessed_tensors,
   if masks is not None:
     outputs['detection_masks'] = tf.identity(masks, name='detection_masks')
   for output_key in outputs:
-    tf.add_to_collection(output_collection_name, outputs[output_key])
+    tf.compat.v1.add_to_collection(output_collection_name, outputs[output_key])
   if masks is not None:
-    tf.add_to_collection(output_collection_name, outputs['detection_masks'])
+    tf.compat.v1.add_to_collection(output_collection_name, outputs['detection_masks'])
   return outputs
 
 
@@ -257,22 +257,22 @@ def _write_saved_model(saved_model_path,
 
       tf.import_graph_def(frozen_graph_def, name='')
 
-      builder = tf.saved_model.builder.SavedModelBuilder(saved_model_path)
+      builder = tf.compat.v1.saved_model.builder.SavedModelBuilder(saved_model_path)
 
       tensor_info_inputs = {
-          'inputs': tf.saved_model.utils.build_tensor_info(inputs)}
+          'inputs': tf.compat.v1.saved_model.utils.build_tensor_info(inputs)}
       tensor_info_outputs = {}
       for k, v in outputs.items():
-        tensor_info_outputs[k] = tf.saved_model.utils.build_tensor_info(v)
+        tensor_info_outputs[k] = tf.compat.v1.saved_model.utils.build_tensor_info(v)
 
       detection_signature = (
-          tf.saved_model.signature_def_utils.build_signature_def(
+          tf.compat.v1.saved_model.signature_def_utils.build_signature_def(
               inputs=tensor_info_inputs,
               outputs=tensor_info_outputs,
               method_name=signature_constants.PREDICT_METHOD_NAME))
 
       builder.add_meta_graph_and_variables(
-          sess, [tf.saved_model.tag_constants.SERVING],
+          sess, [tf.saved_model.SERVING],
           signature_def_map={
               signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
                   detection_signature,
@@ -304,7 +304,7 @@ def _export_inference_graph(input_type,
                             optimize_graph=False,
                             output_collection_name='inference_op'):
   """Export helper."""
-  tf.gfile.MakeDirs(output_directory)
+  tf.io.gfile.makedirs(output_directory)
   frozen_graph_path = os.path.join(output_directory,
                                    'frozen_inference_graph.pb')
   saved_model_path = os.path.join(output_directory, 'saved_model')
@@ -313,7 +313,7 @@ def _export_inference_graph(input_type,
   if input_type not in input_placeholder_fn_map:
     raise ValueError('Unknown input type: {}'.format(input_type))
   placeholder_tensor, input_tensors = input_placeholder_fn_map[input_type]()
-  inputs = tf.to_float(input_tensors)
+  inputs = tf.cast(input_tensors, dtype=tf.float32)
   preprocessed_inputs = detection_model.preprocess(inputs)
   output_tensors = detection_model.predict(preprocessed_inputs)
   postprocessed_tensors = detection_model.postprocess(output_tensors)
@@ -324,19 +324,19 @@ def _export_inference_graph(input_type,
   if use_moving_averages:
     variable_averages = tf.train.ExponentialMovingAverage(0.0)
     variables_to_restore = variable_averages.variables_to_restore()
-    saver = tf.train.Saver(variables_to_restore)
+    saver = tf.compat.v1.train.Saver(variables_to_restore)
   else:
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
   input_saver_def = saver.as_saver_def()
 
   _write_graph_and_checkpoint(
-      inference_graph_def=tf.get_default_graph().as_graph_def(),
+      inference_graph_def=tf.compat.v1.get_default_graph().as_graph_def(),
       model_path=model_path,
       input_saver_def=input_saver_def,
       trained_checkpoint_prefix=trained_checkpoint_prefix)
 
   frozen_graph_def = freeze_graph_with_def_protos(
-      input_graph_def=tf.get_default_graph().as_graph_def(),
+      input_graph_def=tf.compat.v1.get_default_graph().as_graph_def(),
       input_saver_def=input_saver_def,
       input_checkpoint=trained_checkpoint_prefix,
       output_node_names=','.join(outputs.keys()),

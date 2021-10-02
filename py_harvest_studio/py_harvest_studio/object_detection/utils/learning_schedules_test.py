@@ -22,7 +22,7 @@ from object_detection.utils import learning_schedules
 class LearningSchedulesTest(tf.test.TestCase):
 
   def testExponentialDecayWithBurnin(self):
-    global_step = tf.placeholder(tf.int32, [])
+    global_step = tf.compat.v1.placeholder(tf.int32, [])
     learning_rate_base = 1.0
     learning_rate_decay_steps = 3
     learning_rate_decay_factor = .1
@@ -41,7 +41,7 @@ class LearningSchedulesTest(tf.test.TestCase):
       self.assertAllClose(output_rates, exp_rates)
 
   def testManualStepping(self):
-    global_step = tf.placeholder(tf.int64, [])
+    global_step = tf.compat.v1.placeholder(tf.int64, [])
     boundaries = [2, 3, 7]
     rates = [1.0, 2.0, 3.0, 4.0]
     exp_rates = [1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0]

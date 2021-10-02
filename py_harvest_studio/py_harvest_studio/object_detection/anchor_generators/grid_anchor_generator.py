@@ -164,9 +164,9 @@ def tile_anchors(grid_height,
   widths = scales * ratio_sqrts * base_anchor_size[1]
 
   # Get a grid of box centers
-  y_centers = tf.to_float(tf.range(grid_height))
+  y_centers = tf.cast(tf.range(grid_height), dtype=tf.float32)
   y_centers = y_centers * anchor_stride[0] + anchor_offset[0]
-  x_centers = tf.to_float(tf.range(grid_width))
+  x_centers = tf.cast(tf.range(grid_width), dtype=tf.float32)
   x_centers = x_centers * anchor_stride[1] + anchor_offset[1]
   x_centers, y_centers = ops.meshgrid(x_centers, y_centers)
 

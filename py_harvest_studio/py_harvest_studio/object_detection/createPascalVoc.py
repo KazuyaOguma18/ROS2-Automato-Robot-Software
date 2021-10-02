@@ -28,8 +28,8 @@ NUM_CLASSES = 2
 
 detection_graph = tf.Graph()
 with detection_graph.as_default():
-  od_graph_def = tf.GraphDef()
-  with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+  od_graph_def = tf.compat.v1.GraphDef()
+  with tf.io.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
     serialized_graph = fid.read()
     od_graph_def.ParseFromString(serialized_graph)
     tf.import_graph_def(od_graph_def, name='')
@@ -144,7 +144,7 @@ def create_pascalVOC(full_name, width,height, data, output_file_name):
         fp.write(elm)
 
 with detection_graph.as_default():
-  with tf.Session(graph=detection_graph) as sess:
+  with tf.compat.v1.Session(graph=detection_graph) as sess:
     for image_path in TEST_IMAGE_PATHS:
       print("-------------------------------------------------------------------------------",image_path)
       image = Image.open(image_path)

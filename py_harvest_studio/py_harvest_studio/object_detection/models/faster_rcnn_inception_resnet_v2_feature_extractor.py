@@ -99,7 +99,7 @@ class FasterRCNNInceptionResnetV2FeatureExtractor(
         weight_decay=self._weight_decay)):
       # Forces is_training to False to disable batch norm update.
       with slim.arg_scope([slim.batch_norm], is_training=False):
-        with tf.variable_scope('InceptionResnetV2',
+        with tf.compat.v1.variable_scope('InceptionResnetV2',
                                reuse=self._reuse_weights) as scope:
           rpn_feature_map, _ = (
               inception_resnet_v2.inception_resnet_v2_base(
@@ -125,27 +125,27 @@ class FasterRCNNInceptionResnetV2FeatureExtractor(
         [batch_size * self.max_num_proposals, height, width, depth]
         representing box classifier features for each proposal.
     """
-    with tf.variable_scope('InceptionResnetV2', reuse=self._reuse_weights):
+    with tf.compat.v1.variable_scope('InceptionResnetV2', reuse=self._reuse_weights):
       with slim.arg_scope(inception_resnet_v2.inception_resnet_v2_arg_scope(
           weight_decay=self._weight_decay)):
         # Forces is_training to False to disable batch norm update.
         with slim.arg_scope([slim.batch_norm], is_training=False):
           with slim.arg_scope([slim.conv2d, slim.max_pool2d, slim.avg_pool2d],
                               stride=1, padding='SAME'):
-            with tf.variable_scope('Mixed_7a'):
-              with tf.variable_scope('Branch_0'):
+            with tf.compat.v1.variable_scope('Mixed_7a'):
+              with tf.compat.v1.variable_scope('Branch_0'):
                 tower_conv = slim.conv2d(proposal_feature_maps,
                                          256, 1, scope='Conv2d_0a_1x1')
                 tower_conv_1 = slim.conv2d(
                     tower_conv, 384, 3, stride=2,
                     padding='VALID', scope='Conv2d_1a_3x3')
-              with tf.variable_scope('Branch_1'):
+              with tf.compat.v1.variable_scope('Branch_1'):
                 tower_conv1 = slim.conv2d(
                     proposal_feature_maps, 256, 1, scope='Conv2d_0a_1x1')
                 tower_conv1_1 = slim.conv2d(
                     tower_conv1, 288, 3, stride=2,
                     padding='VALID', scope='Conv2d_1a_3x3')
-              with tf.variable_scope('Branch_2'):
+              with tf.compat.v1.variable_scope('Branch_2'):
                 tower_conv2 = slim.conv2d(
                     proposal_feature_maps, 256, 1, scope='Conv2d_0a_1x1')
                 tower_conv2_1 = slim.conv2d(tower_conv2, 288, 3,
@@ -153,7 +153,7 @@ class FasterRCNNInceptionResnetV2FeatureExtractor(
                 tower_conv2_2 = slim.conv2d(
                     tower_conv2_1, 320, 3, stride=2,
                     padding='VALID', scope='Conv2d_1a_3x3')
-              with tf.variable_scope('Branch_3'):
+              with tf.compat.v1.variable_scope('Branch_3'):
                 tower_pool = slim.max_pool2d(
                     proposal_feature_maps, 3, stride=2, padding='VALID',
                     scope='MaxPool_1a_3x3')
@@ -192,7 +192,7 @@ class FasterRCNNInceptionResnetV2FeatureExtractor(
     """
 
     variables_to_restore = {}
-    for variable in tf.global_variables():
+    for variable in tf.compat.v1.global_variables():
       if variable.op.name.startswith(
           first_stage_feature_extractor_scope):
         var_name = variable.op.name.replace(

@@ -338,8 +338,8 @@ class PreprocessorTest(tf.test.TestCase):
     # After elementwise multiplication, the result should be all-zero since one
     # of them is all-zero.
     boxes_diff = tf.multiply(
-        tf.squared_difference(boxes, boxes_expected1),
-        tf.squared_difference(boxes, boxes_expected2))
+        tf.math.squared_difference(boxes, boxes_expected1),
+        tf.math.squared_difference(boxes, boxes_expected2))
     expected_result = tf.zeros_like(boxes_diff)
 
     with self.test_session() as sess:
@@ -368,13 +368,13 @@ class PreprocessorTest(tf.test.TestCase):
     images = tensor_dict[fields.InputDataFields.image]
     boxes = tensor_dict[fields.InputDataFields.groundtruth_boxes]
 
-    boxes_diff1 = tf.squared_difference(boxes, boxes_expected1)
-    boxes_diff2 = tf.squared_difference(boxes, boxes_expected2)
+    boxes_diff1 = tf.math.squared_difference(boxes, boxes_expected1)
+    boxes_diff2 = tf.math.squared_difference(boxes, boxes_expected2)
     boxes_diff = tf.multiply(boxes_diff1, boxes_diff2)
     boxes_diff_expected = tf.zeros_like(boxes_diff)
 
-    images_diff1 = tf.squared_difference(images, images_expected1)
-    images_diff2 = tf.squared_difference(images, images_expected2)
+    images_diff1 = tf.math.squared_difference(images, images_expected1)
+    images_diff2 = tf.math.squared_difference(images, images_expected2)
     images_diff = tf.multiply(images_diff1, images_diff2)
     images_diff_expected = tf.zeros_like(images_diff)
 
@@ -389,7 +389,7 @@ class PreprocessorTest(tf.test.TestCase):
     preprocess_options = [(preprocessor.random_horizontal_flip, {})]
     image_height = 3
     image_width = 3
-    images = tf.random_uniform([1, image_height, image_width, 3])
+    images = tf.random.uniform([1, image_height, image_width, 3])
     boxes = self.createTestBoxes()
     masks = self.createTestMasks()
     keypoints = self.createTestKeypoints()
@@ -428,8 +428,8 @@ class PreprocessorTest(tf.test.TestCase):
     images = self.createTestImages()
     tensor_dict = {fields.InputDataFields.image: images}
     tensor_dict = preprocessor.preprocess(tensor_dict, preprocessing_options)
-    images_min = tf.to_float(images) * 0.9 / 255.0
-    images_max = tf.to_float(images) * 1.1 / 255.0
+    images_min = tf.cast(images, dtype=tf.float32) * 0.9 / 255.0
+    images_max = tf.cast(images, dtype=tf.float32) * 1.1 / 255.0
     images = tensor_dict[fields.InputDataFields.image]
     values_greater = tf.greater_equal(images, images_min)
     values_less = tf.less_equal(images, images_max)
@@ -446,8 +446,8 @@ class PreprocessorTest(tf.test.TestCase):
     tensor_dict = {fields.InputDataFields.image: images_original}
     tensor_dict = preprocessor.preprocess(tensor_dict, preprocess_options)
     images_scaled = tensor_dict[fields.InputDataFields.image]
-    images_original_shape = tf.shape(images_original)
-    images_scaled_shape = tf.shape(images_scaled)
+    images_original_shape = tf.shape(input=images_original)
+    images_scaled_shape = tf.shape(input=images_scaled)
     with self.test_session() as sess:
       (images_original_shape_, images_scaled_shape_) = sess.run(
           [images_original_shape, images_scaled_shape])
@@ -470,20 +470,20 @@ class PreprocessorTest(tf.test.TestCase):
         value=images_gray, num_or_size_splits=3, axis=3)
     images_r, images_g, images_b = tf.split(
         value=images_original, num_or_size_splits=3, axis=3)
-    images_r_diff1 = tf.squared_difference(tf.to_float(images_r),
-                                           tf.to_float(images_gray_r))
-    images_r_diff2 = tf.squared_difference(tf.to_float(images_gray_r),
-                                           tf.to_float(images_gray_g))
+    images_r_diff1 = tf.math.squared_difference(tf.cast(images_r, dtype=tf.float32),
+                                           tf.cast(images_gray_r, dtype=tf.float32))
+    images_r_diff2 = tf.math.squared_difference(tf.cast(images_gray_r, dtype=tf.float32),
+                                           tf.cast(images_gray_g, dtype=tf.float32))
     images_r_diff = tf.multiply(images_r_diff1, images_r_diff2)
-    images_g_diff1 = tf.squared_difference(tf.to_float(images_g),
-                                           tf.to_float(images_gray_g))
-    images_g_diff2 = tf.squared_difference(tf.to_float(images_gray_g),
-                                           tf.to_float(images_gray_b))
+    images_g_diff1 = tf.math.squared_difference(tf.cast(images_g, dtype=tf.float32),
+                                           tf.cast(images_gray_g, dtype=tf.float32))
+    images_g_diff2 = tf.math.squared_difference(tf.cast(images_gray_g, dtype=tf.float32),
+                                           tf.cast(images_gray_b, dtype=tf.float32))
     images_g_diff = tf.multiply(images_g_diff1, images_g_diff2)
-    images_b_diff1 = tf.squared_difference(tf.to_float(images_b),
-                                           tf.to_float(images_gray_b))
-    images_b_diff2 = tf.squared_difference(tf.to_float(images_gray_b),
-                                           tf.to_float(images_gray_r))
+    images_b_diff1 = tf.math.squared_difference(tf.cast(images_b, dtype=tf.float32),
+                                           tf.cast(images_gray_b, dtype=tf.float32))
+    images_b_diff2 = tf.math.squared_difference(tf.cast(images_gray_b, dtype=tf.float32),
+                                           tf.cast(images_gray_r, dtype=tf.float32))
     images_b_diff = tf.multiply(images_b_diff1, images_b_diff2)
     image_zero1 = tf.constant(0, dtype=tf.float32, shape=[1, 4, 4, 1])
     with self.test_session() as sess:
@@ -506,8 +506,8 @@ class PreprocessorTest(tf.test.TestCase):
     tensor_dict = {fields.InputDataFields.image: images_original}
     tensor_dict = preprocessor.preprocess(tensor_dict, preprocessing_options)
     images_bright = tensor_dict[fields.InputDataFields.image]
-    image_original_shape = tf.shape(images_original)
-    image_bright_shape = tf.shape(images_bright)
+    image_original_shape = tf.shape(input=images_original)
+    image_bright_shape = tf.shape(input=images_bright)
     with self.test_session() as sess:
       (image_original_shape_, image_bright_shape_) = sess.run(
           [image_original_shape, image_bright_shape])
@@ -526,8 +526,8 @@ class PreprocessorTest(tf.test.TestCase):
     tensor_dict = {fields.InputDataFields.image: images_original}
     tensor_dict = preprocessor.preprocess(tensor_dict, preprocessing_options)
     images_contrast = tensor_dict[fields.InputDataFields.image]
-    image_original_shape = tf.shape(images_original)
-    image_contrast_shape = tf.shape(images_contrast)
+    image_original_shape = tf.shape(input=images_original)
+    image_contrast_shape = tf.shape(input=images_contrast)
     with self.test_session() as sess:
       (image_original_shape_, image_contrast_shape_) = sess.run(
           [image_original_shape, image_contrast_shape])
@@ -546,8 +546,8 @@ class PreprocessorTest(tf.test.TestCase):
     tensor_dict = {fields.InputDataFields.image: images_original}
     tensor_dict = preprocessor.preprocess(tensor_dict, preprocessing_options)
     images_hue = tensor_dict[fields.InputDataFields.image]
-    image_original_shape = tf.shape(images_original)
-    image_hue_shape = tf.shape(images_hue)
+    image_original_shape = tf.shape(input=images_original)
+    image_hue_shape = tf.shape(input=images_hue)
     with self.test_session() as sess:
       (image_original_shape_, image_hue_shape_) = sess.run(
           [image_original_shape, image_hue_shape])
@@ -563,11 +563,11 @@ class PreprocessorTest(tf.test.TestCase):
     }))
     preprocessing_options.append((preprocessor.random_distort_color, {}))
     images_original = self.createTestImages()
-    images_original_shape = tf.shape(images_original)
+    images_original_shape = tf.shape(input=images_original)
     tensor_dict = {fields.InputDataFields.image: images_original}
     tensor_dict = preprocessor.preprocess(tensor_dict, preprocessing_options)
     images_distorted_color = tensor_dict[fields.InputDataFields.image]
-    images_distorted_color_shape = tf.shape(images_distorted_color)
+    images_distorted_color_shape = tf.shape(input=images_distorted_color)
     with self.test_session() as sess:
       (images_original_shape_, images_distorted_color_shape_) = sess.run(
           [images_original_shape, images_distorted_color_shape])
@@ -577,11 +577,11 @@ class PreprocessorTest(tf.test.TestCase):
     preprocessing_options = []
     preprocessing_options.append((preprocessor.random_jitter_boxes, {}))
     boxes = self.createTestBoxes()
-    boxes_shape = tf.shape(boxes)
+    boxes_shape = tf.shape(input=boxes)
     tensor_dict = {fields.InputDataFields.groundtruth_boxes: boxes}
     tensor_dict = preprocessor.preprocess(tensor_dict, preprocessing_options)
     distorted_boxes = tensor_dict[fields.InputDataFields.groundtruth_boxes]
-    distorted_boxes_shape = tf.shape(distorted_boxes)
+    distorted_boxes_shape = tf.shape(input=distorted_boxes)
 
     with self.test_session() as sess:
       (boxes_shape_, distorted_boxes_shape_) = sess.run(
@@ -720,10 +720,10 @@ class PreprocessorTest(tf.test.TestCase):
         fields.InputDataFields.groundtruth_boxes]
     distorted_labels = distorted_tensor_dict[
         fields.InputDataFields.groundtruth_classes]
-    boxes_shape = tf.shape(boxes)
-    distorted_boxes_shape = tf.shape(distorted_boxes)
-    images_shape = tf.shape(images)
-    distorted_images_shape = tf.shape(distorted_images)
+    boxes_shape = tf.shape(input=boxes)
+    distorted_boxes_shape = tf.shape(input=distorted_boxes)
+    images_shape = tf.shape(input=images)
+    distorted_images_shape = tf.shape(input=distorted_images)
 
     with self.test_session() as sess:
       (boxes_shape_, distorted_boxes_shape_, images_shape_,
@@ -790,7 +790,7 @@ class PreprocessorTest(tf.test.TestCase):
     image = self.createColorfulTestImage()[0]
     boxes = self.createTestBoxes()
     labels = self.createTestLabels()
-    masks = tf.random_uniform([2, 200, 400], dtype=tf.float32)
+    masks = tf.random.uniform([2, 200, 400], dtype=tf.float32)
     with mock.patch.object(
         tf.image,
         'sample_distorted_bounding_box'
@@ -857,7 +857,7 @@ class PreprocessorTest(tf.test.TestCase):
     image = self.createColorfulTestImage()
     boxes = self.createTestBoxes()
     labels = self.createTestLabels()
-    masks = tf.random_uniform([2, 200, 400], dtype=tf.float32)
+    masks = tf.random.uniform([2, 200, 400], dtype=tf.float32)
 
     tensor_dict = {
         fields.InputDataFields.image: image,
@@ -1128,7 +1128,7 @@ class PreprocessorTest(tf.test.TestCase):
     image = self.createColorfulTestImage()
     boxes = self.createTestBoxes()
     labels = self.createTestLabels()
-    masks = tf.random_uniform([2, 200, 400], dtype=tf.float32)
+    masks = tf.random.uniform([2, 200, 400], dtype=tf.float32)
 
     tensor_dict = {
         fields.InputDataFields.image: image,
@@ -1238,10 +1238,10 @@ class PreprocessorTest(tf.test.TestCase):
     padded_images = padded_tensor_dict[fields.InputDataFields.image]
     padded_boxes = padded_tensor_dict[
         fields.InputDataFields.groundtruth_boxes]
-    boxes_shape = tf.shape(boxes)
-    padded_boxes_shape = tf.shape(padded_boxes)
-    images_shape = tf.shape(images)
-    padded_images_shape = tf.shape(padded_images)
+    boxes_shape = tf.shape(input=boxes)
+    padded_boxes_shape = tf.shape(input=padded_boxes)
+    images_shape = tf.shape(input=images)
+    padded_images_shape = tf.shape(input=padded_images)
 
     with self.test_session() as sess:
       (boxes_shape_, padded_boxes_shape_, images_shape_,
@@ -1284,10 +1284,10 @@ class PreprocessorTest(tf.test.TestCase):
     padded_images = padded_tensor_dict[fields.InputDataFields.image]
     padded_boxes = padded_tensor_dict[
         fields.InputDataFields.groundtruth_boxes]
-    boxes_shape = tf.shape(boxes)
-    padded_boxes_shape = tf.shape(padded_boxes)
-    images_shape = tf.shape(images)
-    padded_images_shape = tf.shape(padded_images)
+    boxes_shape = tf.shape(input=boxes)
+    padded_boxes_shape = tf.shape(input=padded_boxes)
+    images_shape = tf.shape(input=images)
+    padded_images_shape = tf.shape(input=padded_images)
 
     with self.test_session() as sess:
       (boxes_shape_, padded_boxes_shape_, images_shape_,
@@ -1332,10 +1332,10 @@ class PreprocessorTest(tf.test.TestCase):
     cropped_images = cropped_tensor_dict[fields.InputDataFields.image]
     cropped_boxes = cropped_tensor_dict[
         fields.InputDataFields.groundtruth_boxes]
-    boxes_shape = tf.shape(boxes)
-    cropped_boxes_shape = tf.shape(cropped_boxes)
-    images_shape = tf.shape(images)
-    cropped_images_shape = tf.shape(cropped_images)
+    boxes_shape = tf.shape(input=boxes)
+    cropped_boxes_shape = tf.shape(input=cropped_boxes)
+    images_shape = tf.shape(input=images)
+    cropped_images_shape = tf.shape(input=cropped_images)
 
     with self.test_session() as sess:
       (boxes_shape_, cropped_boxes_shape_, images_shape_,
@@ -1362,8 +1362,8 @@ class PreprocessorTest(tf.test.TestCase):
     blacked_tensor_dict = preprocessor.preprocess(tensor_dict,
                                                   preprocessing_options)
     blacked_images = blacked_tensor_dict[fields.InputDataFields.image]
-    images_shape = tf.shape(images)
-    blacked_images_shape = tf.shape(blacked_images)
+    images_shape = tf.shape(input=images)
+    blacked_images_shape = tf.shape(input=blacked_images)
 
     with self.test_session() as sess:
       (images_shape_, blacked_images_shape_) = sess.run(
@@ -1386,7 +1386,7 @@ class PreprocessorTest(tf.test.TestCase):
     resized_tensor_dict = preprocessor.preprocess(tensor_dict,
                                                   preprocessing_options)
     resized_images = resized_tensor_dict[fields.InputDataFields.image]
-    resized_images_shape = tf.shape(resized_images)
+    resized_images_shape = tf.shape(input=resized_images)
     expected_images_shape = tf.constant([1, 75, 150, 3], dtype=tf.int32)
 
     with self.test_session() as sess:
@@ -1403,7 +1403,7 @@ class PreprocessorTest(tf.test.TestCase):
     expected_shape_list = [[75, 50, 3], [50, 100, 3], [30, 100, 3]]
 
     for in_shape, expected_shape in zip(in_shape_list, expected_shape_list):
-      in_image = tf.random_uniform(in_shape)
+      in_image = tf.random.uniform(in_shape)
       out_image = preprocessor.resize_to_range(
           in_image, min_dimension=min_dim, max_dimension=max_dim)
       self.assertAllEqual(out_image.get_shape().as_list(), expected_shape)
@@ -1416,10 +1416,10 @@ class PreprocessorTest(tf.test.TestCase):
     expected_shape_list = [[75, 50, 3], [50, 100, 3], [30, 100, 3]]
 
     for in_shape, expected_shape in zip(in_shape_list, expected_shape_list):
-      in_image = tf.placeholder(tf.float32, shape=(None, None, 3))
+      in_image = tf.compat.v1.placeholder(tf.float32, shape=(None, None, 3))
       out_image = preprocessor.resize_to_range(
           in_image, min_dimension=min_dim, max_dimension=max_dim)
-      out_image_shape = tf.shape(out_image)
+      out_image_shape = tf.shape(input=out_image)
       with self.test_session() as sess:
         out_image_shape = sess.run(out_image_shape,
                                    feed_dict={in_image:
@@ -1440,8 +1440,8 @@ class PreprocessorTest(tf.test.TestCase):
                                      expected_image_shape_list,
                                      in_masks_shape_list,
                                      expected_masks_shape_list):
-      in_image = tf.random_uniform(in_image_shape)
-      in_masks = tf.random_uniform(in_masks_shape)
+      in_image = tf.random.uniform(in_image_shape)
+      in_masks = tf.random.uniform(in_masks_shape)
       out_image, out_masks = preprocessor.resize_to_range(
           in_image, in_masks, min_dimension=min_dim, max_dimension=max_dim)
       self.assertAllEqual(out_masks.get_shape().as_list(), expected_mask_shape)
@@ -1461,13 +1461,13 @@ class PreprocessorTest(tf.test.TestCase):
                                      expected_image_shape_list,
                                      in_masks_shape_list,
                                      expected_masks_shape_list):
-      in_image = tf.placeholder(tf.float32, shape=(None, None, 3))
-      in_masks = tf.placeholder(tf.float32, shape=(None, None, None))
-      in_masks = tf.random_uniform(in_masks_shape)
+      in_image = tf.compat.v1.placeholder(tf.float32, shape=(None, None, 3))
+      in_masks = tf.compat.v1.placeholder(tf.float32, shape=(None, None, None))
+      in_masks = tf.random.uniform(in_masks_shape)
       out_image, out_masks = preprocessor.resize_to_range(
           in_image, in_masks, min_dimension=min_dim, max_dimension=max_dim)
-      out_image_shape = tf.shape(out_image)
-      out_masks_shape = tf.shape(out_masks)
+      out_image_shape = tf.shape(input=out_image)
+      out_masks_shape = tf.shape(input=out_masks)
 
       with self.test_session() as sess:
         out_image_shape, out_masks_shape = sess.run(
@@ -1493,12 +1493,12 @@ class PreprocessorTest(tf.test.TestCase):
                                      expected_image_shape_list,
                                      in_masks_shape_list,
                                      expected_masks_shape_list):
-      in_image = tf.random_uniform(in_image_shape)
-      in_masks = tf.random_uniform(in_masks_shape)
+      in_image = tf.random.uniform(in_image_shape)
+      in_masks = tf.random.uniform(in_masks_shape)
       out_image, out_masks = preprocessor.resize_image(
           in_image, in_masks, new_height=height, new_width=width)
-      out_image_shape = tf.shape(out_image)
-      out_masks_shape = tf.shape(out_masks)
+      out_image_shape = tf.shape(input=out_image)
+      out_masks_shape = tf.shape(input=out_masks)
 
       with self.test_session() as sess:
         out_image_shape, out_masks_shape = sess.run(
@@ -1507,7 +1507,7 @@ class PreprocessorTest(tf.test.TestCase):
         self.assertAllEqual(out_masks_shape, expected_mask_shape)
 
   def testResizeToRange4DImageTensor(self):
-    image = tf.random_uniform([1, 200, 300, 3])
+    image = tf.random.uniform([1, 200, 300, 3])
     with self.assertRaises(ValueError):
       preprocessor.resize_to_range(image, 500, 600)
 
@@ -1519,10 +1519,10 @@ class PreprocessorTest(tf.test.TestCase):
     expected_shape_list = [[320, 320, 3], [320, 320, 3]]
 
     for in_shape, expected_shape in zip(in_shape_list, expected_shape_list):
-      in_image = tf.random_uniform(in_shape)
+      in_image = tf.random.uniform(in_shape)
       out_image = preprocessor.resize_to_range(
           in_image, min_dimension=min_dim, max_dimension=max_dim)
-      out_image_shape = tf.shape(out_image)
+      out_image_shape = tf.shape(input=out_image)
 
       with self.test_session() as sess:
         out_image_shape = sess.run(out_image_shape)
@@ -1537,7 +1537,7 @@ class PreprocessorTest(tf.test.TestCase):
     expected_boxes = [[6., 8., 24., 24.],
                       [30., 12., 54., 28.]]
 
-    in_image = tf.random_uniform(in_shape)
+    in_image = tf.random.uniform(in_shape)
     in_boxes = tf.constant(in_boxes)
     _, out_boxes = preprocessor.scale_boxes_to_pixel_coordinates(
         in_image, boxes=in_boxes)
@@ -1558,7 +1558,7 @@ class PreprocessorTest(tf.test.TestCase):
         [[24., 16.], [30., 20.], [36., 24.]],
     ]
 
-    in_image = tf.random_uniform(in_shape)
+    in_image = tf.random.uniform(in_shape)
     _, out_boxes, out_keypoints = preprocessor.scale_boxes_to_pixel_coordinates(
         in_image, boxes=in_boxes, keypoints=in_keypoints)
     with self.test_session() as sess:

@@ -38,7 +38,7 @@ class FakeModel(model.DetectionModel):
     return tf.identity(inputs)
 
   def predict(self, preprocessed_inputs):
-    return {'image': tf.layers.conv2d(preprocessed_inputs, 3, 1)}
+    return {'image': tf.compat.v1.layers.conv2d(preprocessed_inputs, 3, 1)}
 
   def postprocess(self, prediction_dict):
     with tf.control_dependencies(prediction_dict.values()):
@@ -73,13 +73,13 @@ class ExportInferenceGraphTest(tf.test.TestCase):
     with g.as_default():
       mock_model = FakeModel()
       preprocessed_inputs = mock_model.preprocess(
-          tf.placeholder(tf.float32, shape=[None, None, None, 3]))
+          tf.compat.v1.placeholder(tf.float32, shape=[None, None, None, 3]))
       predictions = mock_model.predict(preprocessed_inputs)
       mock_model.postprocess(predictions)
       if use_moving_averages:
         tf.train.ExponentialMovingAverage(0.0).apply()
-      saver = tf.train.Saver()
-      init = tf.global_variables_initializer()
+      saver = tf.compat.v1.train.Saver()
+      init = tf.compat.v1.global_variables_initializer()
       with self.test_session() as sess:
         sess.run(init)
         saver.save(sess, checkpoint_path)
@@ -87,8 +87,8 @@ class ExportInferenceGraphTest(tf.test.TestCase):
   def _load_inference_graph(self, inference_graph_path):
     od_graph = tf.Graph()
     with od_graph.as_default():
-      od_graph_def = tf.GraphDef()
-      with tf.gfile.GFile(inference_graph_path) as fid:
+      od_graph_def = tf.compat.v1.GraphDef()
+      with tf.io.gfile.GFile(inference_graph_path) as fid:
         serialized_graph = fid.read()
         od_graph_def.ParseFromString(serialized_graph)
         tf.import_graph_def(od_graph_def, name='')
@@ -434,8 +434,8 @@ class ExportInferenceGraphTest(tf.test.TestCase):
         np.ones((4, 4, 3)).astype(np.uint8))] * 2)
     with tf.Graph().as_default() as od_graph:
       with self.test_session(graph=od_graph) as sess:
-        tf.saved_model.loader.load(
-            sess, [tf.saved_model.tag_constants.SERVING], saved_model_path)
+        tf.compat.v1.saved_model.loader.load(
+            sess, [tf.saved_model.SERVING], saved_model_path)
         tf_example = od_graph.get_tensor_by_name('tf_example:0')
         boxes = od_graph.get_tensor_by_name('detection_boxes:0')
         scores = od_graph.get_tensor_by_name('detection_scores:0')
@@ -481,7 +481,7 @@ class ExportInferenceGraphTest(tf.test.TestCase):
         np.ones((4, 4, 3)).astype(np.uint8))] * 2)
     with tf.Graph().as_default() as od_graph:
       with self.test_session(graph=od_graph) as sess:
-        new_saver = tf.train.import_meta_graph(meta_graph_path)
+        new_saver = tf.compat.v1.train.import_meta_graph(meta_graph_path)
         new_saver.restore(sess, model_path)
 
         tf_example = od_graph.get_tensor_by_name('tf_example:0')

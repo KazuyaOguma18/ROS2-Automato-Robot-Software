@@ -119,7 +119,7 @@ def get_variables_available_in_checkpoint(variables, checkpoint_path):
     variable_names_map = variables
   else:
     raise ValueError('`variables` is expected to be a list or dict.')
-  ckpt_reader = tf.train.NewCheckpointReader(checkpoint_path)
+  ckpt_reader = tf.compat.v1.train.NewCheckpointReader(checkpoint_path)
   ckpt_vars = ckpt_reader.get_variable_to_shape_map().keys()
   vars_in_ckpt = {}
   for variable_name, variable in sorted(variable_names_map.items()):

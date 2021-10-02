@@ -32,7 +32,7 @@ class InputReaderBuilderTest(tf.test.TestCase):
 
   def create_tf_record(self):
     path = os.path.join(self.get_temp_dir(), 'tfrecord')
-    writer = tf.python_io.TFRecordWriter(path)
+    writer = tf.io.TFRecordWriter(path)
 
     image_tensor = np.random.randint(255, size=(4, 5, 3)).astype(np.uint8)
     with self.test_session():
@@ -72,7 +72,7 @@ class InputReaderBuilderTest(tf.test.TestCase):
     text_format.Merge(input_reader_text_proto, input_reader_proto)
     tensor_dict = input_reader_builder.build(input_reader_proto)
 
-    sv = tf.train.Supervisor(logdir=self.get_temp_dir())
+    sv = tf.compat.v1.train.Supervisor(logdir=self.get_temp_dir())
     with sv.prepare_or_wait_for_session() as sess:
       sv.start_queue_runners(sess)
       output_dict = sess.run(tensor_dict)

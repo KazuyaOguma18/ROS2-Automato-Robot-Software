@@ -31,10 +31,10 @@ NUMBER_OF_CLASSES = 2
 
 def get_input_function():
   """A function to get test inputs. Returns an image with one box."""
-  image = tf.random_uniform([32, 32, 3], dtype=tf.float32)
-  class_label = tf.random_uniform(
+  image = tf.random.uniform([32, 32, 3], dtype=tf.float32)
+  class_label = tf.random.uniform(
       [1], minval=0, maxval=NUMBER_OF_CLASSES, dtype=tf.int32)
-  box_label = tf.random_uniform(
+  box_label = tf.random.uniform(
       [1, 4], minval=0.4, maxval=0.6, dtype=tf.float32)
 
   return {
@@ -64,7 +64,7 @@ class FakeDetectionModel(model.DetectionModel):
     Returns:
       preprocessed_inputs: a [batch, 28, 28, channels] float32 tensor.
     """
-    return tf.image.resize_images(inputs, [28, 28])
+    return tf.image.resize(inputs, [28, 28])
 
   def predict(self, preprocessed_inputs):
     """Prediction tensors from inputs tensor.
@@ -134,8 +134,8 @@ class FakeDetectionModel(model.DetectionModel):
         weights=weights)
 
     loss_dict = {
-        'localization_loss': tf.reduce_sum(location_losses),
-        'classification_loss': tf.reduce_sum(cls_losses),
+        'localization_loss': tf.reduce_sum(input_tensor=location_losses),
+        'classification_loss': tf.reduce_sum(input_tensor=cls_losses),
     }
     return loss_dict
 
@@ -150,7 +150,7 @@ class FakeDetectionModel(model.DetectionModel):
     Returns:
       A dict mapping variable names to variables.
     """
-    return {var.op.name: var for var in tf.global_variables()}
+    return {var.op.name: var for var in tf.compat.v1.global_variables()}
 
 
 class TrainerTest(tf.test.TestCase):

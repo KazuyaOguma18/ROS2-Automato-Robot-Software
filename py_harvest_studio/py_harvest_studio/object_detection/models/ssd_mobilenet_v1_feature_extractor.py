@@ -71,8 +71,8 @@ class SSDMobileNetV1FeatureExtractor(ssd_meta_arch.SSDFeatureExtractor):
     """
     preprocessed_inputs.get_shape().assert_has_rank(4)
     shape_assert = tf.Assert(
-        tf.logical_and(tf.greater_equal(tf.shape(preprocessed_inputs)[1], 33),
-                       tf.greater_equal(tf.shape(preprocessed_inputs)[2], 33)),
+        tf.logical_and(tf.greater_equal(tf.shape(input=preprocessed_inputs)[1], 33),
+                       tf.greater_equal(tf.shape(input=preprocessed_inputs)[2], 33)),
         ['image size must at least be 33 in both height and width.'])
 
     feature_map_layout = {
@@ -83,7 +83,7 @@ class SSDMobileNetV1FeatureExtractor(ssd_meta_arch.SSDFeatureExtractor):
 
     with tf.control_dependencies([shape_assert]):
       with slim.arg_scope(self._conv_hyperparams):
-        with tf.variable_scope('MobilenetV1',
+        with tf.compat.v1.variable_scope('MobilenetV1',
                                reuse=self._reuse_weights) as scope:
           _, image_features = mobilenet_v1.mobilenet_v1_base(
               preprocessed_inputs,

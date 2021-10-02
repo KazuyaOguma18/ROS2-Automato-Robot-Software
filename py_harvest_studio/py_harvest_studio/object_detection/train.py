@@ -56,9 +56,9 @@ from object_detection.protos import model_pb2
 from object_detection.protos import pipeline_pb2
 from object_detection.protos import train_pb2
 
-tf.logging.set_verbosity(tf.logging.INFO)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 flags.DEFINE_string('master', '', 'BNS name of the TensorFlow master to use.')
 flags.DEFINE_integer('task', 0, 'task id')
 flags.DEFINE_integer('num_clones', 1, 'Number of clones to deploy per worker.')
@@ -99,7 +99,7 @@ def get_configs_from_pipeline_file():
     input_config: input_reader_pb2.InputReader
   """
   pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
-  with tf.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
     text_format.Merge(f.read(), pipeline_config)
 
   model_config = pipeline_config.model
@@ -123,15 +123,15 @@ def get_configs_from_multiple_files():
     input_config: input_reader_pb2.InputReader
   """
   train_config = train_pb2.TrainConfig()
-  with tf.gfile.GFile(FLAGS.train_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.train_config_path, 'r') as f:
     text_format.Merge(f.read(), train_config)
 
   model_config = model_pb2.DetectionModel()
-  with tf.gfile.GFile(FLAGS.model_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.model_config_path, 'r') as f:
     text_format.Merge(f.read(), model_config)
 
   input_config = input_reader_pb2.InputReader()
-  with tf.gfile.GFile(FLAGS.input_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.input_config_path, 'r') as f:
     text_format.Merge(f.read(), input_config)
 
   return model_config, train_config, input_config
@@ -177,7 +177,7 @@ def main(_):
 
   if worker_replicas >= 1 and ps_tasks > 0:
     # Set up distributed training.
-    server = tf.train.Server(tf.train.ClusterSpec(cluster), protocol='grpc',
+    server = tf.distribute.Server(tf.train.ClusterSpec(cluster), protocol='grpc',
                              job_name=task_info.type,
                              task_index=task_info.index)
     if task_info.type == 'ps':
@@ -195,4 +195,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

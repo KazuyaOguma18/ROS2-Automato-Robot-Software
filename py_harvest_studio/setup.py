@@ -21,7 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'tomato_detector = py_harvest_studio.tomato_detector:main',
-
+            'tomato_detector_zero = py_harvest_studio.tomato_detector_zero:main',
         ],
     },
 )

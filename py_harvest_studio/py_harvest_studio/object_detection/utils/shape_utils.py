@@ -60,12 +60,12 @@ def pad_tensor(t, length):
       statically.
   """
   t_rank = tf.rank(t)
-  t_shape = tf.shape(t)
+  t_shape = tf.shape(input=t)
   t_d0 = t_shape[0]
   pad_d0 = tf.expand_dims(length - t_d0, 0)
   pad_shape = tf.cond(
-      tf.greater(t_rank, 1), lambda: tf.concat([pad_d0, t_shape[1:]], 0),
-      lambda: tf.expand_dims(length - t_d0, 0))
+      pred=tf.greater(t_rank, 1), true_fn=lambda: tf.concat([pad_d0, t_shape[1:]], 0),
+      false_fn=lambda: tf.expand_dims(length - t_d0, 0))
   padded_t = tf.concat([t, tf.zeros(pad_shape, dtype=t.dtype)], 0)
   if not _is_tensor(length):
     padded_t = _set_dim_0(padded_t, length)
@@ -105,9 +105,9 @@ def pad_or_clip_tensor(t, length):
       to length statically.
   """
   processed_t = tf.cond(
-      tf.greater(tf.shape(t)[0], length),
-      lambda: clip_tensor(t, length),
-      lambda: pad_tensor(t, length))
+      pred=tf.greater(tf.shape(input=t)[0], length),
+      true_fn=lambda: clip_tensor(t, length),
+      false_fn=lambda: pad_tensor(t, length))
   if not _is_tensor(length):
     processed_t = _set_dim_0(processed_t, length)
   return processed_t
@@ -126,7 +126,7 @@ def combined_static_and_dynamic_shape(tensor):
     A list of size tensor.shape.ndims containing integers or a scalar tensor.
   """
   static_shape = tensor.shape.as_list()
-  dynamic_shape = tf.shape(tensor)
+  dynamic_shape = tf.shape(input=tensor)
   combined_shape = []
   for index, dim in enumerate(static_shape):
     if dim is not None:

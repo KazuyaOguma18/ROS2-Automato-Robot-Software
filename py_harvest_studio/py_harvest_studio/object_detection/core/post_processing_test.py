@@ -142,7 +142,7 @@ class MulticlassNonMaxSuppressionTest(tf.test.TestCase):
                           [.5, 0.01], [.3, 0.01],
                           [.01, .85], [.01, .5]])
 
-    num_boxes = tf.shape(boxes)[0]
+    num_boxes = tf.shape(input=boxes)[0]
     heatmap_height = 5
     heatmap_width = 5
     num_keypoints = 17
@@ -640,9 +640,9 @@ class MulticlassNonMaxSuppressionTest(tf.test.TestCase):
       self.assertAllClose(nmsed_masks, exp_nms_masks)
 
   def test_batch_multiclass_nms_with_dynamic_batch_size(self):
-    boxes_placeholder = tf.placeholder(tf.float32, shape=(None, None, 2, 4))
-    scores_placeholder = tf.placeholder(tf.float32, shape=(None, None, 2))
-    masks_placeholder = tf.placeholder(tf.float32, shape=(None, None, 2, 2, 2))
+    boxes_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(None, None, 2, 4))
+    scores_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(None, None, 2))
+    masks_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(None, None, 2, 2, 2))
 
     boxes = np.array([[[[0, 0, 1, 1], [0, 0, 4, 5]],
                        [[0, 0.1, 1, 1.1], [0, 0.1, 2, 1.1]],

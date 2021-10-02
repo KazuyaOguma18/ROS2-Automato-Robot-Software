@@ -44,13 +44,13 @@ class FasterRcnnResnetV1FeatureExtractorTest(tf.test.TestCase):
     for architecture in ['resnet_v1_50', 'resnet_v1_101', 'resnet_v1_152']:
       feature_extractor = self._build_feature_extractor(
           first_stage_features_stride=16, architecture=architecture)
-      preprocessed_inputs = tf.random_uniform(
+      preprocessed_inputs = tf.random.uniform(
           [4, 224, 224, 3], maxval=255, dtype=tf.float32)
       rpn_feature_map = feature_extractor.extract_proposal_features(
           preprocessed_inputs, scope='TestScope')
-      features_shape = tf.shape(rpn_feature_map)
+      features_shape = tf.shape(input=rpn_feature_map)
 
-      init_op = tf.global_variables_initializer()
+      init_op = tf.compat.v1.global_variables_initializer()
       with self.test_session() as sess:
         sess.run(init_op)
         features_shape_out = sess.run(features_shape)
@@ -59,13 +59,13 @@ class FasterRcnnResnetV1FeatureExtractorTest(tf.test.TestCase):
   def test_extract_proposal_features_stride_eight(self):
     feature_extractor = self._build_feature_extractor(
         first_stage_features_stride=8)
-    preprocessed_inputs = tf.random_uniform(
+    preprocessed_inputs = tf.random.uniform(
         [4, 224, 224, 3], maxval=255, dtype=tf.float32)
     rpn_feature_map = feature_extractor.extract_proposal_features(
         preprocessed_inputs, scope='TestScope')
-    features_shape = tf.shape(rpn_feature_map)
+    features_shape = tf.shape(input=rpn_feature_map)
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       features_shape_out = sess.run(features_shape)
@@ -74,13 +74,13 @@ class FasterRcnnResnetV1FeatureExtractorTest(tf.test.TestCase):
   def test_extract_proposal_features_half_size_input(self):
     feature_extractor = self._build_feature_extractor(
         first_stage_features_stride=16)
-    preprocessed_inputs = tf.random_uniform(
+    preprocessed_inputs = tf.random.uniform(
         [1, 112, 112, 3], maxval=255, dtype=tf.float32)
     rpn_feature_map = feature_extractor.extract_proposal_features(
         preprocessed_inputs, scope='TestScope')
-    features_shape = tf.shape(rpn_feature_map)
+    features_shape = tf.shape(input=rpn_feature_map)
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       features_shape_out = sess.run(features_shape)
@@ -93,12 +93,12 @@ class FasterRcnnResnetV1FeatureExtractorTest(tf.test.TestCase):
   def test_extract_proposal_features_dies_on_very_small_images(self):
     feature_extractor = self._build_feature_extractor(
         first_stage_features_stride=16)
-    preprocessed_inputs = tf.placeholder(tf.float32, (4, None, None, 3))
+    preprocessed_inputs = tf.compat.v1.placeholder(tf.float32, (4, None, None, 3))
     rpn_feature_map = feature_extractor.extract_proposal_features(
         preprocessed_inputs, scope='TestScope')
-    features_shape = tf.shape(rpn_feature_map)
+    features_shape = tf.shape(input=rpn_feature_map)
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       with self.assertRaises(tf.errors.InvalidArgumentError):
@@ -109,7 +109,7 @@ class FasterRcnnResnetV1FeatureExtractorTest(tf.test.TestCase):
   def test_extract_proposal_features_dies_with_incorrect_rank_inputs(self):
     feature_extractor = self._build_feature_extractor(
         first_stage_features_stride=16)
-    preprocessed_inputs = tf.random_uniform(
+    preprocessed_inputs = tf.random.uniform(
         [224, 224, 3], maxval=255, dtype=tf.float32)
     with self.assertRaises(ValueError):
       feature_extractor.extract_proposal_features(
@@ -118,14 +118,14 @@ class FasterRcnnResnetV1FeatureExtractorTest(tf.test.TestCase):
   def test_extract_box_classifier_features_returns_expected_size(self):
     feature_extractor = self._build_feature_extractor(
         first_stage_features_stride=16)
-    proposal_feature_maps = tf.random_uniform(
+    proposal_feature_maps = tf.random.uniform(
         [3, 7, 7, 1024], maxval=255, dtype=tf.float32)
     proposal_classifier_features = (
         feature_extractor.extract_box_classifier_features(
             proposal_feature_maps, scope='TestScope'))
-    features_shape = tf.shape(proposal_classifier_features)
+    features_shape = tf.shape(input=proposal_classifier_features)
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       features_shape_out = sess.run(features_shape)

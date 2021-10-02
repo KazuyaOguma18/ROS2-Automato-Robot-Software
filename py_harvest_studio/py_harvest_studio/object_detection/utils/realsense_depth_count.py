@@ -5,6 +5,7 @@
 ##      Open CV and Numpy integration        ##
 ###############################################
 
+import pyrealsense2 as rs
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -29,10 +30,12 @@ def rs_depth_counter(depth_select ,k):
     sum_depth_counter = 0
     av = 0
     for_ave_sum = 0
+    # print(max(d_list))
     for n in range(len(d_list)):
         
-        if d_list[n]- up < 1:
+        if d_list[n]- up < 10:
             counter += 1
+            
             
         else:
             count.append(counter)

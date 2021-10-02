@@ -97,7 +97,7 @@ class AnchorGenerator(object):
         len(feature_map_shape_list) != len(self.num_anchors_per_location())):
       raise ValueError('Number of feature maps is expected to equal the length '
                        'of `num_anchors_per_location`.')
-    with tf.name_scope(self.name_scope()):
+    with tf.compat.v1.name_scope(self.name_scope()):
       anchors = self._generate(feature_map_shape_list, **params)
       if self.check_num_anchors:
         with tf.control_dependencies([
@@ -139,4 +139,4 @@ class AnchorGenerator(object):
       expected_num_anchors += (num_anchors_per_location
                                * feature_map_shape[0]
                                * feature_map_shape[1])
-    return tf.assert_equal(expected_num_anchors, anchors.num_boxes())
+    return tf.compat.v1.assert_equal(expected_num_anchors, anchors.num_boxes())

@@ -32,25 +32,25 @@ class TfExampleDecoder(data_decoder.DataDecoder):
   def __init__(self):
     """Constructor sets keys_to_features and items_to_handlers."""
     self.keys_to_features = {
-        'image/encoded': tf.FixedLenFeature((), tf.string, default_value=''),
-        'image/format': tf.FixedLenFeature((), tf.string, default_value='jpeg'),
-        'image/filename': tf.FixedLenFeature((), tf.string, default_value=''),
-        'image/key/sha256': tf.FixedLenFeature((), tf.string, default_value=''),
-        'image/source_id': tf.FixedLenFeature((), tf.string, default_value=''),
-        'image/height': tf.FixedLenFeature((), tf.int64, 1),
-        'image/width': tf.FixedLenFeature((), tf.int64, 1),
+        'image/encoded': tf.io.FixedLenFeature((), tf.string, default_value=''),
+        'image/format': tf.io.FixedLenFeature((), tf.string, default_value='jpeg'),
+        'image/filename': tf.io.FixedLenFeature((), tf.string, default_value=''),
+        'image/key/sha256': tf.io.FixedLenFeature((), tf.string, default_value=''),
+        'image/source_id': tf.io.FixedLenFeature((), tf.string, default_value=''),
+        'image/height': tf.io.FixedLenFeature((), tf.int64, 1),
+        'image/width': tf.io.FixedLenFeature((), tf.int64, 1),
         # Object boxes and classes.
-        'image/object/bbox/xmin': tf.VarLenFeature(tf.float32),
-        'image/object/bbox/xmax': tf.VarLenFeature(tf.float32),
-        'image/object/bbox/ymin': tf.VarLenFeature(tf.float32),
-        'image/object/bbox/ymax': tf.VarLenFeature(tf.float32),
-        'image/object/class/label': tf.VarLenFeature(tf.int64),
-        'image/object/area': tf.VarLenFeature(tf.float32),
-        'image/object/is_crowd': tf.VarLenFeature(tf.int64),
-        'image/object/difficult': tf.VarLenFeature(tf.int64),
+        'image/object/bbox/xmin': tf.io.VarLenFeature(tf.float32),
+        'image/object/bbox/xmax': tf.io.VarLenFeature(tf.float32),
+        'image/object/bbox/ymin': tf.io.VarLenFeature(tf.float32),
+        'image/object/bbox/ymax': tf.io.VarLenFeature(tf.float32),
+        'image/object/class/label': tf.io.VarLenFeature(tf.int64),
+        'image/object/area': tf.io.VarLenFeature(tf.float32),
+        'image/object/is_crowd': tf.io.VarLenFeature(tf.int64),
+        'image/object/difficult': tf.io.VarLenFeature(tf.int64),
         # Instance masks and classes.
-        'image/segmentation/object': tf.VarLenFeature(tf.int64),
-        'image/segmentation/object/class': tf.VarLenFeature(tf.int64)
+        'image/segmentation/object': tf.io.VarLenFeature(tf.int64),
+        'image/segmentation/object/class': tf.io.VarLenFeature(tf.int64)
     }
     self.items_to_handlers = {
         fields.InputDataFields.image: slim_example_decoder.Image(
@@ -139,7 +139,7 @@ class TfExampleDecoder(data_decoder.DataDecoder):
     """
     masks = keys_to_tensors['image/segmentation/object']
     if isinstance(masks, tf.SparseTensor):
-      masks = tf.sparse_tensor_to_dense(masks)
+      masks = tf.sparse.to_dense(masks)
     height = keys_to_tensors['image/height']
     width = keys_to_tensors['image/width']
     to_shape = tf.cast(tf.stack([-1, height, width]), tf.int32)

@@ -81,7 +81,7 @@ class MultiplyGradientsMatchingRegexTest(tf.test.TestCase):
     grads_and_vars = variables_helper.multiply_gradients_matching_regex(
         grads_and_vars, regex_list, multiplier)
     exp_output = [(0.0, 1.0), (0.0, 2.0), (3.0, 3.0), (4.0, 4.0)]
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       output = sess.run(grads_and_vars)
@@ -94,7 +94,7 @@ class MultiplyGradientsMatchingRegexTest(tf.test.TestCase):
     grads_and_vars = variables_helper.multiply_gradients_matching_regex(
         grads_and_vars, regex_list, multiplier)
     exp_output = [(1.0, 1.0), (0.0, 2.0), (3.0, 3.0), (0.0, 4.0)]
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       output = sess.run(grads_and_vars)
@@ -119,7 +119,7 @@ class FreezeGradientsMatchingRegexTest(tf.test.TestCase):
     grads_and_vars = variables_helper.freeze_gradients_matching_regex(
         grads_and_vars, regex_list)
     exp_output = [(3.0, 3.0), (4.0, 4.0)]
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       output = sess.run(grads_and_vars)
@@ -134,8 +134,8 @@ class GetVariablesAvailableInCheckpointTest(tf.test.TestCase):
         tf.Variable(1.0, name='biases')
     ]
     checkpoint_path = os.path.join(self.get_temp_dir(), 'graph.pb')
-    init_op = tf.global_variables_initializer()
-    saver = tf.train.Saver(variables)
+    init_op = tf.compat.v1.global_variables_initializer()
+    saver = tf.compat.v1.train.Saver(variables)
     with self.test_session() as sess:
       sess.run(init_op)
       saver.save(sess, checkpoint_path)
@@ -148,8 +148,8 @@ class GetVariablesAvailableInCheckpointTest(tf.test.TestCase):
     graph1_variables = [
         tf.Variable(1.0, name='weights'),
     ]
-    init_op = tf.global_variables_initializer()
-    saver = tf.train.Saver(graph1_variables)
+    init_op = tf.compat.v1.global_variables_initializer()
+    saver = tf.compat.v1.train.Saver(graph1_variables)
     with self.test_session() as sess:
       sess.run(init_op)
       saver.save(sess, checkpoint_path)
@@ -164,8 +164,8 @@ class GetVariablesAvailableInCheckpointTest(tf.test.TestCase):
     graph1_variables = [
         tf.Variable(1.0, name='ckpt_weights'),
     ]
-    init_op = tf.global_variables_initializer()
-    saver = tf.train.Saver(graph1_variables)
+    init_op = tf.compat.v1.global_variables_initializer()
+    saver = tf.compat.v1.train.Saver(graph1_variables)
     with self.test_session() as sess:
       sess.run(init_op)
       saver.save(sess, checkpoint_path)

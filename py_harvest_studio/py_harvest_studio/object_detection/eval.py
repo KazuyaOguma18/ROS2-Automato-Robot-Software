@@ -56,9 +56,9 @@ from object_detection.protos import model_pb2
 from object_detection.protos import pipeline_pb2
 from object_detection.utils import label_map_util
 
-tf.logging.set_verbosity(tf.logging.INFO)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 flags.DEFINE_boolean('eval_training_data', False,
                      'If training data should be evaluated for this job.')
 flags.DEFINE_string('checkpoint_dir', '',
@@ -90,7 +90,7 @@ def get_configs_from_pipeline_file():
     input_config: a input_reader_pb2.InputReader
   """
   pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
-  with tf.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
     text_format.Merge(f.read(), pipeline_config)
 
   model_config = pipeline_config.model
@@ -117,15 +117,15 @@ def get_configs_from_multiple_files():
     input_config: a input_reader_pb2.InputReader
   """
   eval_config = eval_pb2.EvalConfig()
-  with tf.gfile.GFile(FLAGS.eval_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.eval_config_path, 'r') as f:
     text_format.Merge(f.read(), eval_config)
 
   model_config = model_pb2.DetectionModel()
-  with tf.gfile.GFile(FLAGS.model_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.model_config_path, 'r') as f:
     text_format.Merge(f.read(), model_config)
 
   input_config = input_reader_pb2.InputReader()
-  with tf.gfile.GFile(FLAGS.input_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.input_config_path, 'r') as f:
     text_format.Merge(f.read(), input_config)
 
   return model_config, eval_config, input_config
@@ -158,4 +158,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

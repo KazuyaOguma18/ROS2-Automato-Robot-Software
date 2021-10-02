@@ -87,7 +87,7 @@ class BoxPredictor(object):
           [batch_size, num_anchors, num_classes + 1] representing the class
           predictions for the proposals.
     """
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
       return self._predict(image_features, num_predictions_per_location,
                            **params)
 
@@ -191,12 +191,12 @@ class RfcnBoxPredictor(BoxPredictor):
       raise ValueError('Currently RfcnBoxPredictor only supports '
                        'predicting a single box per class per location.')
 
-    batch_size = tf.shape(proposal_boxes)[0]
-    num_boxes = tf.shape(proposal_boxes)[1]
+    batch_size = tf.shape(input=proposal_boxes)[0]
+    num_boxes = tf.shape(input=proposal_boxes)[1]
     def get_box_indices(proposals):
       proposals_shape = proposals.get_shape().as_list()
       if any(dim is None for dim in proposals_shape):
-        proposals_shape = tf.shape(proposals)
+        proposals_shape = tf.shape(input=proposals)
       ones_mat = tf.ones(proposals_shape[:2], dtype=tf.int32)
       multiplier = tf.expand_dims(
           tf.range(start=0, limit=proposals_shape[0]), 1)
@@ -220,7 +220,7 @@ class RfcnBoxPredictor(BoxPredictor):
           crop_size=self._crop_size,
           num_spatial_bins=self._num_spatial_bins,
           global_pool=True)
-      box_encodings = tf.squeeze(box_encodings, squeeze_dims=[1, 2])
+      box_encodings = tf.squeeze(box_encodings, axis=[1, 2])
       box_encodings = tf.reshape(box_encodings,
                                  [batch_size * num_boxes, 1, self.num_classes,
                                   self._box_code_size])
@@ -241,7 +241,7 @@ class RfcnBoxPredictor(BoxPredictor):
           num_spatial_bins=self._num_spatial_bins,
           global_pool=True)
       class_predictions_with_background = tf.squeeze(
-          class_predictions_with_background, squeeze_dims=[1, 2])
+          class_predictions_with_background, axis=[1, 2])
       class_predictions_with_background = tf.reshape(
           class_predictions_with_background,
           [batch_size * num_boxes, 1, total_classes])
@@ -366,8 +366,8 @@ class MaskRCNNBoxPredictor(BoxPredictor):
     if num_predictions_per_location != 1:
       raise ValueError('Currently FullyConnectedBoxPredictor only supports '
                        'predicting a single box per class per location.')
-    spatial_averaged_image_features = tf.reduce_mean(image_features, [1, 2],
-                                                     keep_dims=True,
+    spatial_averaged_image_features = tf.reduce_mean(input_tensor=image_features, axis=[1, 2],
+                                                     keepdims=True,
                                                      name='AvgPool')
     flattened_image_features = slim.flatten(spatial_averaged_image_features)
     if self._use_dropout:
@@ -406,7 +406,7 @@ class MaskRCNNBoxPredictor(BoxPredictor):
                                        num_outputs=self.num_classes,
                                        activation_fn=None,
                                        kernel_size=[1, 1])
-        instance_masks = tf.expand_dims(tf.transpose(mask_predictions,
+        instance_masks = tf.expand_dims(tf.transpose(a=mask_predictions,
                                                      perm=[0, 3, 1, 2]),
                                         axis=1,
                                         name='MaskPredictor')

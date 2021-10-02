@@ -39,10 +39,10 @@ def write_metrics(metrics, global_step, summary_dir):
     summary_dir: Directory to write tensorflow summaries to.
   """
   logging.info('Writing metrics to tf summary.')
-  summary_writer = tf.summary.FileWriter(summary_dir)
+  summary_writer = tf.compat.v1.summary.FileWriter(summary_dir)
   for key in sorted(metrics):
-    summary = tf.Summary(value=[
-        tf.Summary.Value(tag=key, simple_value=metrics[key]),
+    summary = tf.compat.v1.Summary(value=[
+        tf.compat.v1.Summary.Value(tag=key, simple_value=metrics[key]),
     ])
     summary_writer.add_summary(summary, global_step)
     logging.info('%s: %f', key, metrics[key])
@@ -264,12 +264,12 @@ def visualize_detection_results(result_dict,
     export_path = os.path.join(export_dir, 'export-{}.png'.format(tag))
     vis_utils.save_image_array_as_png(image, export_path)
 
-  summary = tf.Summary(value=[
-      tf.Summary.Value(tag=tag, image=tf.Summary.Image(
+  summary = tf.compat.v1.Summary(value=[
+      tf.compat.v1.Summary.Value(tag=tag, image=tf.compat.v1.Summary.Image(
           encoded_image_string=vis_utils.encode_image_array_as_png_str(
               image)))
   ])
-  summary_writer = tf.summary.FileWriter(summary_dir)
+  summary_writer = tf.compat.v1.summary.FileWriter(summary_dir)
   summary_writer.add_summary(summary, global_step)
   summary_writer.close()
 
@@ -356,20 +356,20 @@ def run_checkpoint_once(tensor_dict,
   """
   if save_graph and not save_graph_dir:
     raise ValueError('`save_graph_dir` must be defined.')
-  sess = tf.Session(master, graph=tf.get_default_graph())
-  sess.run(tf.global_variables_initializer())
-  sess.run(tf.local_variables_initializer())
+  sess = tf.compat.v1.Session(master, graph=tf.compat.v1.get_default_graph())
+  sess.run(tf.compat.v1.global_variables_initializer())
+  sess.run(tf.compat.v1.local_variables_initializer())
   if restore_fn:
     restore_fn(sess)
   else:
     if not checkpoint_dirs:
       raise ValueError('`checkpoint_dirs` must have at least one entry.')
     checkpoint_file = tf.train.latest_checkpoint(checkpoint_dirs[0])
-    saver = tf.train.Saver(variables_to_restore)
+    saver = tf.compat.v1.train.Saver(variables_to_restore)
     saver.restore(sess, checkpoint_file)
 
   if save_graph:
-    tf.train.write_graph(sess.graph_def, save_graph_dir, 'eval.pbtxt')
+    tf.io.write_graph(sess.graph_def, save_graph_dir, 'eval.pbtxt')
 
   valid_keys = list(set(tensor_dict.keys()) - set(keys_to_exclude_from_results))
   result_lists = {key: [] for key in valid_keys}
@@ -404,7 +404,7 @@ def run_checkpoint_once(tensor_dict,
       metrics = aggregated_result_processor(result_lists)
       if other_metrics is not None:
         metrics.update(other_metrics)
-      global_step = tf.train.global_step(sess, slim.get_global_step())
+      global_step = tf.compat.v1.train.global_step(sess, slim.get_global_step())
       write_metrics(metrics, global_step, summary_dir)
       logging.info('# success: %d', counters['success'])
       logging.info('# skipped: %d', counters['skipped'])

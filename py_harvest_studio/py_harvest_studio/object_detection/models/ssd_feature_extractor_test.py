@@ -36,8 +36,8 @@ class SsdFeatureExtractorTestBase(object):
       expected_feature_map_shapes: The expected shape of the extracted features.
     """
     feature_maps = feature_extractor.extract_features(preprocessed_inputs)
-    feature_map_shapes = [tf.shape(feature_map) for feature_map in feature_maps]
-    init_op = tf.global_variables_initializer()
+    feature_map_shapes = [tf.shape(input=feature_map) for feature_map in feature_maps]
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       feature_map_shapes_out = sess.run(feature_map_shapes)
@@ -63,7 +63,7 @@ class SsdFeatureExtractorTestBase(object):
       depth_multiplier,
       expected_feature_map_shapes_out):
     feature_extractor = self._create_feature_extractor(depth_multiplier)
-    preprocessed_inputs = tf.random_uniform(
+    preprocessed_inputs = tf.random.uniform(
         [4, image_height, image_width, 3], dtype=tf.float32)
     self._validate_features_shape(
         feature_extractor, preprocessed_inputs, expected_feature_map_shapes_out)
@@ -74,11 +74,11 @@ class SsdFeatureExtractorTestBase(object):
       image_width,
       depth_multiplier):
     feature_extractor = self._create_feature_extractor(depth_multiplier)
-    preprocessed_inputs = tf.placeholder(tf.float32, (4, None, None, 3))
+    preprocessed_inputs = tf.compat.v1.placeholder(tf.float32, (4, None, None, 3))
     feature_maps = feature_extractor.extract_features(preprocessed_inputs)
     test_preprocessed_image = np.random.rand(4, image_height, image_width, 3)
     with self.test_session() as sess:
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
       with self.assertRaises(tf.errors.InvalidArgumentError):
         sess.run(feature_maps,
                  feed_dict={preprocessed_inputs: test_preprocessed_image})
@@ -89,8 +89,8 @@ class SsdFeatureExtractorTestBase(object):
     g = tf.Graph()
     with g.as_default():
       feature_extractor = self._create_feature_extractor(depth_multiplier)
-      preprocessed_inputs = tf.placeholder(tf.float32, (4, None, None, 3))
+      preprocessed_inputs = tf.compat.v1.placeholder(tf.float32, (4, None, None, 3))
       feature_extractor.extract_features(preprocessed_inputs)
-      variables = g.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+      variables = g.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES)
       for variable in variables:
         self.assertTrue(variable.name.startswith(scope_name))

@@ -102,8 +102,8 @@ class FasterRCNNResnetV1FeatureExtractor(
                        'tensor of shape %s' % preprocessed_inputs.get_shape())
     shape_assert = tf.Assert(
         tf.logical_and(
-            tf.greater_equal(tf.shape(preprocessed_inputs)[1], 33),
-            tf.greater_equal(tf.shape(preprocessed_inputs)[2], 33)),
+            tf.greater_equal(tf.shape(input=preprocessed_inputs)[1], 33),
+            tf.greater_equal(tf.shape(input=preprocessed_inputs)[2], 33)),
         ['image size must at least be 33 in both height and width.'])
 
     with tf.control_dependencies([shape_assert]):
@@ -114,7 +114,7 @@ class FasterRCNNResnetV1FeatureExtractor(
               batch_norm_epsilon=1e-5,
               batch_norm_scale=True,
               weight_decay=self._weight_decay)):
-        with tf.variable_scope(
+        with tf.compat.v1.variable_scope(
             self._architecture, reuse=self._reuse_weights) as var_scope:
           _, activations = self._resnet_model(
               preprocessed_inputs,
@@ -142,7 +142,7 @@ class FasterRCNNResnetV1FeatureExtractor(
         [batch_size * self.max_num_proposals, height, width, depth]
         representing box classifier features for each proposal.
     """
-    with tf.variable_scope(self._architecture, reuse=self._reuse_weights):
+    with tf.compat.v1.variable_scope(self._architecture, reuse=self._reuse_weights):
       with slim.arg_scope(
           resnet_utils.resnet_arg_scope(
               batch_norm_epsilon=1e-5,

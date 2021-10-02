@@ -116,10 +116,10 @@ class UtilTest(tf.test.TestCase):
       self.assertAllClose([[0.1, 0.2], [0.2, 0.4]], tt4_result)
 
   def test_combines_static_dynamic_shape(self):
-    tensor = tf.placeholder(tf.float32, shape=(None, 2, 3))
+    tensor = tf.compat.v1.placeholder(tf.float32, shape=(None, 2, 3))
     combined_shape = shape_utils.combined_static_and_dynamic_shape(
         tensor)
-    self.assertTrue(tf.contrib.framework.is_tensor(combined_shape[0]))
+    self.assertTrue(tf.is_tensor(combined_shape[0]))
     self.assertListEqual(combined_shape[1:], [2, 3])
 
 

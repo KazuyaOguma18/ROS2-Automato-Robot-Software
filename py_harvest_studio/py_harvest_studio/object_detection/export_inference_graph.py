@@ -72,7 +72,7 @@ from object_detection import exporter
 from object_detection.protos import pipeline_pb2
 
 slim = tf.contrib.slim
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 
 flags.DEFINE_string('input_type', 'image_tensor', 'Type of input node. Can be '
                     'one of [`image_tensor`, `encoded_image_string_tensor`, '
@@ -95,7 +95,7 @@ def main(_):
   assert FLAGS.output_directory, '`output_directory` is missing'
 
   pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
-  with tf.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
+  with tf.io.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
     text_format.Merge(f.read(), pipeline_config)
   exporter.export_inference_graph(
       FLAGS.input_type, pipeline_config, FLAGS.trained_checkpoint_prefix,
@@ -103,4 +103,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

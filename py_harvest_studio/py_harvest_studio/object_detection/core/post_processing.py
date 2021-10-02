@@ -102,9 +102,9 @@ def multiclass_non_max_suppression(boxes,
     raise ValueError('if change_coordinate_frame is True, then a clip_window'
                      'must be specified.')
 
-  with tf.name_scope(scope, 'MultiClassNonMaxSuppression'):
-    num_boxes = tf.shape(boxes)[0]
-    num_scores = tf.shape(scores)[0]
+  with tf.compat.v1.name_scope(scope, 'MultiClassNonMaxSuppression'):
+    num_boxes = tf.shape(input=boxes)[0]
+    num_scores = tf.shape(input=scores)[0]
     num_classes = scores.get_shape()[1]
 
     length_assert = tf.Assert(
@@ -239,15 +239,15 @@ def batch_multiclass_non_max_suppression(boxes,
                      'to the third dimension of scores')
 
   original_masks = masks
-  with tf.name_scope(scope, 'BatchMultiClassNonMaxSuppression'):
+  with tf.compat.v1.name_scope(scope, 'BatchMultiClassNonMaxSuppression'):
     boxes_shape = boxes.shape
     batch_size = boxes_shape[0].value
     num_anchors = boxes_shape[1].value
 
     if batch_size is None:
-      batch_size = tf.shape(boxes)[0]
+      batch_size = tf.shape(input=boxes)[0]
     if num_anchors is None:
-      num_anchors = tf.shape(boxes)[1]
+      num_anchors = tf.shape(input=boxes)[1]
 
     # If num valid boxes aren't provided, create one and mark all boxes as
     # valid.

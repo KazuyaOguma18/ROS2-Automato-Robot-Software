@@ -67,7 +67,7 @@ class KeypointBoxCoder(box_coder.BoxCoder):
     self._keypoint_scale_factors = None
     if scale_factors is not None:
       self._keypoint_scale_factors = tf.expand_dims(tf.tile(
-          [tf.to_float(scale_factors[0]), tf.to_float(scale_factors[1])],
+          [tf.cast(scale_factors[0], dtype=tf.float32), tf.cast(scale_factors[1], dtype=tf.float32)],
           [num_keypoints]), 1)
 
   @property
@@ -93,7 +93,7 @@ class KeypointBoxCoder(box_coder.BoxCoder):
     ycenter_a, xcenter_a, ha, wa = anchors.get_center_coordinates_and_sizes()
     ycenter, xcenter, h, w = boxes.get_center_coordinates_and_sizes()
     keypoints = boxes.get_field(fields.BoxListFields.keypoints)
-    keypoints = tf.transpose(tf.reshape(keypoints,
+    keypoints = tf.transpose(a=tf.reshape(keypoints,
                                         [-1, self._num_keypoints * 2]))
     num_boxes = boxes.num_boxes()
 
@@ -105,8 +105,8 @@ class KeypointBoxCoder(box_coder.BoxCoder):
 
     tx = (xcenter - xcenter_a) / wa
     ty = (ycenter - ycenter_a) / ha
-    tw = tf.log(w / wa)
-    th = tf.log(h / ha)
+    tw = tf.math.log(w / wa)
+    th = tf.math.log(h / ha)
 
     tiled_anchor_centers = tf.tile(
         tf.stack([ycenter_a, xcenter_a]), [self._num_keypoints, 1])
@@ -123,7 +123,7 @@ class KeypointBoxCoder(box_coder.BoxCoder):
       tkeypoints *= tf.tile(self._keypoint_scale_factors, [1, num_boxes])
 
     tboxes = tf.stack([ty, tx, th, tw])
-    return tf.transpose(tf.concat([tboxes, tkeypoints], 0))
+    return tf.transpose(a=tf.concat([tboxes, tkeypoints], 0))
 
   def _decode(self, rel_codes, anchors):
     """Decode relative codes to boxes and keypoints.
@@ -138,8 +138,8 @@ class KeypointBoxCoder(box_coder.BoxCoder):
     """
     ycenter_a, xcenter_a, ha, wa = anchors.get_center_coordinates_and_sizes()
 
-    num_codes = tf.shape(rel_codes)[0]
-    result = tf.unstack(tf.transpose(rel_codes))
+    num_codes = tf.shape(input=rel_codes)[0]
+    result = tf.unstack(tf.transpose(a=rel_codes))
     ty, tx, th, tw = result[:4]
     tkeypoints = result[4:]
     if self._scale_factors:
@@ -158,14 +158,14 @@ class KeypointBoxCoder(box_coder.BoxCoder):
     ymax = ycenter + h / 2.
     xmax = xcenter + w / 2.
     decoded_boxes_keypoints = box_list.BoxList(
-        tf.transpose(tf.stack([ymin, xmin, ymax, xmax])))
+        tf.transpose(a=tf.stack([ymin, xmin, ymax, xmax])))
 
     tiled_anchor_centers = tf.tile(
         tf.stack([ycenter_a, xcenter_a]), [self._num_keypoints, 1])
     tiled_anchor_sizes = tf.tile(
         tf.stack([ha, wa]), [self._num_keypoints, 1])
     keypoints = tkeypoints * tiled_anchor_sizes + tiled_anchor_centers
-    keypoints = tf.reshape(tf.transpose(keypoints),
+    keypoints = tf.reshape(tf.transpose(a=keypoints),
                            [-1, self._num_keypoints, 2])
     decoded_boxes_keypoints.add_field(fields.BoxListFields.keypoints, keypoints)
     return decoded_boxes_keypoints

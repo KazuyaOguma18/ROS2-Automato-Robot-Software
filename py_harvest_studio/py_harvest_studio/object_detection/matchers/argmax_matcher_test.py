@@ -73,7 +73,7 @@ class ArgMaxMatcherTest(tf.test.TestCase):
     matched_rows = match.matched_row_indices()
     unmatched_cols = match.unmatched_column_indices()
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
 
     with self.test_session() as sess:
       sess.run(init_op)

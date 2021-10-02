@@ -45,7 +45,7 @@ class MaskRCNNBoxPredictorTest(tf.test.TestCase):
     return hyperparams_builder.build(hyperparams, is_training=True)
 
   def test_get_boxes_with_five_classes(self):
-    image_features = tf.random_uniform([2, 7, 7, 3], dtype=tf.float32)
+    image_features = tf.random.uniform([2, 7, 7, 3], dtype=tf.float32)
     mask_box_predictor = box_predictor.MaskRCNNBoxPredictor(
         is_training=False,
         num_classes=5,
@@ -59,13 +59,13 @@ class MaskRCNNBoxPredictorTest(tf.test.TestCase):
     box_encodings = box_predictions[box_predictor.BOX_ENCODINGS]
     class_predictions_with_background = box_predictions[
         box_predictor.CLASS_PREDICTIONS_WITH_BACKGROUND]
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       (box_encodings_shape,
        class_predictions_with_background_shape) = sess.run(
-           [tf.shape(box_encodings),
-            tf.shape(class_predictions_with_background)])
+           [tf.shape(input=box_encodings),
+            tf.shape(input=class_predictions_with_background)])
       self.assertAllEqual(box_encodings_shape, [2, 1, 5, 4])
       self.assertAllEqual(class_predictions_with_background_shape, [2, 1, 6])
 
@@ -81,7 +81,7 @@ class MaskRCNNBoxPredictorTest(tf.test.TestCase):
           predict_instance_masks=True)
 
   def test_get_instance_masks(self):
-    image_features = tf.random_uniform([2, 7, 7, 3], dtype=tf.float32)
+    image_features = tf.random.uniform([2, 7, 7, 3], dtype=tf.float32)
     mask_box_predictor = box_predictor.MaskRCNNBoxPredictor(
         is_training=False,
         num_classes=5,
@@ -99,7 +99,7 @@ class MaskRCNNBoxPredictorTest(tf.test.TestCase):
                          mask_predictions.get_shape().as_list())
 
   def test_do_not_return_instance_masks_and_keypoints_without_request(self):
-    image_features = tf.random_uniform([2, 7, 7, 3], dtype=tf.float32)
+    image_features = tf.random.uniform([2, 7, 7, 3], dtype=tf.float32)
     mask_box_predictor = box_predictor.MaskRCNNBoxPredictor(
         is_training=False,
         num_classes=5,
@@ -144,8 +144,8 @@ class RfcnBoxPredictorTest(tf.test.TestCase):
     return hyperparams_builder.build(conv_hyperparams, is_training=True)
 
   def test_get_correct_box_encoding_and_class_prediction_shapes(self):
-    image_features = tf.random_uniform([4, 8, 8, 64], dtype=tf.float32)
-    proposal_boxes = tf.random_normal([4, 2, 4], dtype=tf.float32)
+    image_features = tf.random.uniform([4, 8, 8, 64], dtype=tf.float32)
+    proposal_boxes = tf.random.normal([4, 2, 4], dtype=tf.float32)
     rfcn_box_predictor = box_predictor.RfcnBoxPredictor(
         is_training=False,
         num_classes=2,
@@ -162,13 +162,13 @@ class RfcnBoxPredictorTest(tf.test.TestCase):
     class_predictions_with_background = box_predictions[
         box_predictor.CLASS_PREDICTIONS_WITH_BACKGROUND]
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       (box_encodings_shape,
        class_predictions_shape) = sess.run(
-           [tf.shape(box_encodings),
-            tf.shape(class_predictions_with_background)])
+           [tf.shape(input=box_encodings),
+            tf.shape(input=class_predictions_with_background)])
       self.assertAllEqual(box_encodings_shape, [8, 1, 2, 4])
       self.assertAllEqual(class_predictions_shape, [8, 1, 3])
 
@@ -192,7 +192,7 @@ class ConvolutionalBoxPredictorTest(tf.test.TestCase):
     return hyperparams_builder.build(conv_hyperparams, is_training=True)
 
   def test_get_boxes_for_five_aspect_ratios_per_location(self):
-    image_features = tf.random_uniform([4, 8, 8, 64], dtype=tf.float32)
+    image_features = tf.random.uniform([4, 8, 8, 64], dtype=tf.float32)
     conv_box_predictor = box_predictor.ConvolutionalBoxPredictor(
         is_training=False,
         num_classes=0,
@@ -211,17 +211,17 @@ class ConvolutionalBoxPredictorTest(tf.test.TestCase):
     objectness_predictions = box_predictions[
         box_predictor.CLASS_PREDICTIONS_WITH_BACKGROUND]
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       (box_encodings_shape,
        objectness_predictions_shape) = sess.run(
-           [tf.shape(box_encodings), tf.shape(objectness_predictions)])
+           [tf.shape(input=box_encodings), tf.shape(input=objectness_predictions)])
       self.assertAllEqual(box_encodings_shape, [4, 320, 1, 4])
       self.assertAllEqual(objectness_predictions_shape, [4, 320, 1])
 
   def test_get_boxes_for_one_aspect_ratio_per_location(self):
-    image_features = tf.random_uniform([4, 8, 8, 64], dtype=tf.float32)
+    image_features = tf.random.uniform([4, 8, 8, 64], dtype=tf.float32)
     conv_box_predictor = box_predictor.ConvolutionalBoxPredictor(
         is_training=False,
         num_classes=0,
@@ -240,19 +240,19 @@ class ConvolutionalBoxPredictorTest(tf.test.TestCase):
     objectness_predictions = box_predictions[
         box_predictor.CLASS_PREDICTIONS_WITH_BACKGROUND]
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       (box_encodings_shape,
        objectness_predictions_shape) = sess.run(
-           [tf.shape(box_encodings), tf.shape(objectness_predictions)])
+           [tf.shape(input=box_encodings), tf.shape(input=objectness_predictions)])
       self.assertAllEqual(box_encodings_shape, [4, 64, 1, 4])
       self.assertAllEqual(objectness_predictions_shape, [4, 64, 1])
 
   def test_get_multi_class_predictions_for_five_aspect_ratios_per_location(
       self):
     num_classes_without_background = 6
-    image_features = tf.random_uniform([4, 8, 8, 64], dtype=tf.float32)
+    image_features = tf.random.uniform([4, 8, 8, 64], dtype=tf.float32)
     conv_box_predictor = box_predictor.ConvolutionalBoxPredictor(
         is_training=False,
         num_classes=num_classes_without_background,
@@ -273,19 +273,19 @@ class ConvolutionalBoxPredictorTest(tf.test.TestCase):
     class_predictions_with_background = box_predictions[
         box_predictor.CLASS_PREDICTIONS_WITH_BACKGROUND]
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       (box_encodings_shape, class_predictions_with_background_shape
       ) = sess.run([
-          tf.shape(box_encodings), tf.shape(class_predictions_with_background)])
+          tf.shape(input=box_encodings), tf.shape(input=class_predictions_with_background)])
       self.assertAllEqual(box_encodings_shape, [4, 320, 1, 4])
       self.assertAllEqual(class_predictions_with_background_shape,
                           [4, 320, num_classes_without_background+1])
 
   def test_get_boxes_for_five_aspect_ratios_per_location_fully_convolutional(
       self):
-    image_features = tf.placeholder(dtype=tf.float32, shape=[4, None, None, 64])
+    image_features = tf.compat.v1.placeholder(dtype=tf.float32, shape=[4, None, None, 64])
     conv_box_predictor = box_predictor.ConvolutionalBoxPredictor(
         is_training=False,
         num_classes=0,
@@ -303,7 +303,7 @@ class ConvolutionalBoxPredictorTest(tf.test.TestCase):
     box_encodings = box_predictions[box_predictor.BOX_ENCODINGS]
     objectness_predictions = box_predictions[
         box_predictor.CLASS_PREDICTIONS_WITH_BACKGROUND]
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
 
     resolution = 32
     expected_num_anchors = resolution*resolution*5
@@ -311,7 +311,7 @@ class ConvolutionalBoxPredictorTest(tf.test.TestCase):
       sess.run(init_op)
       (box_encodings_shape,
        objectness_predictions_shape) = sess.run(
-           [tf.shape(box_encodings), tf.shape(objectness_predictions)],
+           [tf.shape(input=box_encodings), tf.shape(input=objectness_predictions)],
            feed_dict={image_features:
                       np.random.rand(4, resolution, resolution, 64)})
       self.assertAllEqual(box_encodings_shape, [4, expected_num_anchors, 1, 4])

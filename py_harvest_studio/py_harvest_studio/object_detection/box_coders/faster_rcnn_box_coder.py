@@ -79,15 +79,15 @@ class FasterRcnnBoxCoder(box_coder.BoxCoder):
 
     tx = (xcenter - xcenter_a) / wa
     ty = (ycenter - ycenter_a) / ha
-    tw = tf.log(w / wa)
-    th = tf.log(h / ha)
+    tw = tf.math.log(w / wa)
+    th = tf.math.log(h / ha)
     # Scales location targets as used in paper for joint training.
     if self._scale_factors:
       ty *= self._scale_factors[0]
       tx *= self._scale_factors[1]
       th *= self._scale_factors[2]
       tw *= self._scale_factors[3]
-    return tf.transpose(tf.stack([ty, tx, th, tw]))
+    return tf.transpose(a=tf.stack([ty, tx, th, tw]))
 
   def _decode(self, rel_codes, anchors):
     """Decode relative codes to boxes.
@@ -101,7 +101,7 @@ class FasterRcnnBoxCoder(box_coder.BoxCoder):
     """
     ycenter_a, xcenter_a, ha, wa = anchors.get_center_coordinates_and_sizes()
 
-    ty, tx, th, tw = tf.unstack(tf.transpose(rel_codes))
+    ty, tx, th, tw = tf.unstack(tf.transpose(a=rel_codes))
     if self._scale_factors:
       ty /= self._scale_factors[0]
       tx /= self._scale_factors[1]
@@ -115,4 +115,4 @@ class FasterRcnnBoxCoder(box_coder.BoxCoder):
     xmin = xcenter - w / 2.
     ymax = ycenter + h / 2.
     xmax = xcenter + w / 2.
-    return box_list.BoxList(tf.transpose(tf.stack([ymin, xmin, ymax, xmax])))
+    return box_list.BoxList(tf.transpose(a=tf.stack([ymin, xmin, ymax, xmax])))

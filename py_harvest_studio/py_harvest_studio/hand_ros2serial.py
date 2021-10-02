@@ -25,7 +25,7 @@ class HandRos2Serial(Node):
             'hand_goal',
             self.hand_goal_callback,
             10)
-        self.timer_ = self.create_timer(timer_period_sec=0.1, self.timer_callback)
+        self.timer_ = self.create_timer(0.1, self.timer_callback)
         self.ser = serial.Serial("/dev/ttyUSB0", 115200, timeout=0.1)
         self.goal_array = [0,0,0]
         self.current_array = [0,0,0]

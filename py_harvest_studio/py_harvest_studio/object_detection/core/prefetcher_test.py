@@ -30,11 +30,11 @@ class PrefetcherTest(tf.test.TestCase):
       num_batches = 5
       examples = tf.Variable(tf.constant(0, dtype=tf.int64))
       counter = examples.count_up_to(num_batches)
-      image = tf.random_normal([batch_size, image_size,
+      image = tf.random.normal([batch_size, image_size,
                                 image_size, 3],
                                dtype=tf.float32,
                                name='images')
-      label = tf.random_uniform([batch_size, 1], 0, 10,
+      label = tf.random.uniform([batch_size, 1], 0, 10,
                                 dtype=tf.int32, name='labels')
 
       prefetch_queue = prefetcher.prefetch(tensor_dict={'counter': counter,
@@ -48,7 +48,7 @@ class PrefetcherTest(tf.test.TestCase):
       self.assertAllEqual(tensor_dict['label'].get_shape().as_list(),
                           [batch_size, 1])
 
-      tf.initialize_all_variables().run()
+      tf.compat.v1.initialize_all_variables().run()
       with slim.queues.QueueRunners(sess):
         for _ in range(num_batches):
           results = sess.run(tensor_dict)
@@ -65,13 +65,13 @@ class PrefetcherTest(tf.test.TestCase):
       num_batches = 5
       examples = tf.Variable(tf.constant(0, dtype=tf.int64))
       counter = examples.count_up_to(num_batches)
-      image = tf.random_normal([batch_size,
+      image = tf.random.normal([batch_size,
                                 tf.Variable(image_size),
                                 tf.Variable(image_size), 3],
                                dtype=tf.float32,
                                name='image')
       image.set_shape([batch_size, None, None, 3])
-      label = tf.random_uniform([batch_size, tf.Variable(1)], 0,
+      label = tf.random.uniform([batch_size, tf.Variable(1)], 0,
                                 10, dtype=tf.int32, name='label')
       label.set_shape([batch_size, None])
 
@@ -86,7 +86,7 @@ class PrefetcherTest(tf.test.TestCase):
       self.assertAllEqual(tensor_dict['label'].get_shape().as_list(),
                           [batch_size, None])
 
-      tf.initialize_all_variables().run()
+      tf.compat.v1.initialize_all_variables().run()
       with slim.queues.QueueRunners(sess):
         for _ in range(num_batches):
           results = sess.run(tensor_dict)

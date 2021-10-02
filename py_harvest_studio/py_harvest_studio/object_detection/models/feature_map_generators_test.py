@@ -39,9 +39,9 @@ class MultiResolutionFeatureMapGeneratorTest(tf.test.TestCase):
 
   def test_get_expected_feature_map_shapes_with_inception_v2(self):
     image_features = {
-        'Mixed_3c': tf.random_uniform([4, 28, 28, 256], dtype=tf.float32),
-        'Mixed_4c': tf.random_uniform([4, 14, 14, 576], dtype=tf.float32),
-        'Mixed_5c': tf.random_uniform([4, 7, 7, 1024], dtype=tf.float32)
+        'Mixed_3c': tf.random.uniform([4, 28, 28, 256], dtype=tf.float32),
+        'Mixed_4c': tf.random.uniform([4, 14, 14, 576], dtype=tf.float32),
+        'Mixed_5c': tf.random.uniform([4, 7, 7, 1024], dtype=tf.float32)
     }
     feature_maps = feature_map_generators.multi_resolution_feature_maps(
         feature_map_layout=INCEPTION_V2_LAYOUT,
@@ -58,7 +58,7 @@ class MultiResolutionFeatureMapGeneratorTest(tf.test.TestCase):
         'Mixed_5c_2_Conv2d_4_3x3_s2_256': (4, 2, 2, 256),
         'Mixed_5c_2_Conv2d_5_3x3_s2_256': (4, 1, 1, 256)}
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       out_feature_maps = sess.run(feature_maps)
@@ -68,9 +68,9 @@ class MultiResolutionFeatureMapGeneratorTest(tf.test.TestCase):
 
   def test_get_expected_feature_map_shapes_with_inception_v3(self):
     image_features = {
-        'Mixed_5d': tf.random_uniform([4, 35, 35, 256], dtype=tf.float32),
-        'Mixed_6e': tf.random_uniform([4, 17, 17, 576], dtype=tf.float32),
-        'Mixed_7c': tf.random_uniform([4, 8, 8, 1024], dtype=tf.float32)
+        'Mixed_5d': tf.random.uniform([4, 35, 35, 256], dtype=tf.float32),
+        'Mixed_6e': tf.random.uniform([4, 17, 17, 576], dtype=tf.float32),
+        'Mixed_7c': tf.random.uniform([4, 8, 8, 1024], dtype=tf.float32)
     }
 
     feature_maps = feature_map_generators.multi_resolution_feature_maps(
@@ -88,7 +88,7 @@ class MultiResolutionFeatureMapGeneratorTest(tf.test.TestCase):
         'Mixed_7c_2_Conv2d_4_3x3_s2_256': (4, 2, 2, 256),
         'Mixed_7c_2_Conv2d_5_3x3_s2_128': (4, 1, 1, 128)}
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
       out_feature_maps = sess.run(feature_maps)
