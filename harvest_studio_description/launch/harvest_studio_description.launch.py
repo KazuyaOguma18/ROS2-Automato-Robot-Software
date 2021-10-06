@@ -26,13 +26,13 @@ def launch_setup(context, *args, **kwargs):
                output = 'both',
                arguments = [urdf_path])
 
-    jsp = Node(package='joint_state_publisher',
-               executable='joint_state_publisher')
+    jsp = Node(package='joint_state_publisher_gui',
+               executable='joint_state_publisher_gui')
 
     rviz = Node(package= 'rviz2',
                 executable= 'rviz2')
     
-    return rsp, rviz
+    return rsp, jsp, rviz
 
 
 
