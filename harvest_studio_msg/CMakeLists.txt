@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(cpp_harvest_studio)
+project(harvest_studio_msg)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -17,13 +17,21 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(dynamixel_sdk REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+set(msg_files
+  "msg/FruitDataList.msg"
+)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+
+  DEPENDENCIES std_msgs
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -35,25 +43,5 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-
-
-
-include_directories(
-  include
-  ${ament_INCLUDE_DIRS}
-)
-
-function(custom_executable target)
-  add_executable(${target} src/${target}.cpp)
-  ament_target_dependencies(${target} "rclcpp" "std_msgs" "sensor_msgs" "dynamixel_sdk")
-  install(TARGETS ${target} DESTINATION lib/${PROJECT_NAME})
-endfunction()
-
-custom_executable(change_joint_states)
-custom_executable(camera2dynamixel)
-custom_executable(dyna_angle_publisher)
-
-
-# ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()

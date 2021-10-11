@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot
-  name="harvest-studio" xmlns:xacro="http://ros.org/wiki/xacro">
+  name="harvest_studio" xmlns:xacro="http://ros.org/wiki/xacro">
   <link name="dummy">
   </link>
   <link

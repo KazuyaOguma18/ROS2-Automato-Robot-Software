@@ -27,7 +27,8 @@ def launch_setup(context, *args, **kwargs):
                arguments = [urdf_path])
 
     jsp = Node(package='joint_state_publisher_gui',
-               executable='joint_state_publisher_gui')
+               executable='joint_state_publisher_gui',
+               remappings=[('joint_states', 'joint_states_remap')])
 
     rviz = Node(package= 'rviz2',
                 executable= 'rviz2')

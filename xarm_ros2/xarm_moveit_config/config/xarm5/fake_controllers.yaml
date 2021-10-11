@@ -11,6 +11,4 @@ xarm5_traj_controller:
     - joint3
     - joint4
     - joint5
-    - azure_camera_joint
-    - right_arm_joint
-    - left_arm_joint
+

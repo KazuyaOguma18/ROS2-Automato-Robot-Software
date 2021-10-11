@@ -11,3 +11,4 @@ xarm5_traj_controller:
     - joint3
     - joint4
     - joint5
+
