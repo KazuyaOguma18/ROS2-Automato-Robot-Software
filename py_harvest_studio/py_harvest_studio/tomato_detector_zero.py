@@ -15,7 +15,7 @@ from rclpy import qos
 
 from rclpy.qos import qos_profile_sensor_data
 
-from cpp_harvest_studio.msg import FruitDataList
+from harvest_studio_msg.msg import FruitDataList
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CameraInfo
 from cv_bridge import CvBridge
