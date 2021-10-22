@@ -1,6 +1,6 @@
 <robot name="" xmlns:xacro="thhp://ros.org/wiki/xacro">
     <xacro:arg name="dof" default="5"/>
-    <xacro:include filename="$(find xarm_description)/urdf/xarm_device.urdf.xacro"/>-->
+    <!--<xacro:include filename="$(find xarm_description)/urdf/xarm_device.urdf.xacro"/>-->
     <xacro:include filename="$(find harvest_studio_description)/harvest_studio_robot.urdf.xacro"/>
     
     <xacro:include filename="$(find harvest_studio_description)/harvest_studio_endeffector.urdf.xacro"/>
