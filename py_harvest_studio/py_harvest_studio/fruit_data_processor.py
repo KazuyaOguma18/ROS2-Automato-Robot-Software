@@ -11,7 +11,7 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import Bool
-from cpp_harvest_studio.msg import FruitDataList
+from harvest_studio_msg.msg import FruitDataList
 
 
 class FruitDataProcessor(Node):

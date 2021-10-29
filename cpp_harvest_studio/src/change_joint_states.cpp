@@ -32,7 +32,7 @@ void ChangeJointStates::jointstate_callback(const sensor_msgs::msg::JointState::
 
     rejoint_state.header.stamp = rclcpp::Clock().now();      
     for (long unsigned int i=0; i<jointstates->position.size(); i++){
-        if(jointstates->name[i] == "camera_joint"){
+        if(jointstates->name[i] == "azure_camera_joint"){
             if(jointstates->position.size() > 0){
                 rejoint_state.position[i] = dyna_joint_state.position[0];
             }
@@ -41,6 +41,28 @@ void ChangeJointStates::jointstate_callback(const sensor_msgs::msg::JointState::
             }
             if(jointstates->effort.size() > 0){
                 rejoint_state.effort[i] = dyna_joint_state.effort[0];
+            }
+        }
+        else if(jointstates->name[i] == "right_arm_joint"){
+            if(jointstates->position.size() > 0){
+                rejoint_state.position[i] = arm_joint_state.position[0];
+            }
+            if(jointstates->velocity.size() > 0){
+                rejoint_state.velocity[i] = arm_joint_state.velocity[0];
+            }
+            if(jointstates->effort.size() > 0){
+                rejoint_state.effort[i] = arm_joint_state.effort[0];
+            }
+        }
+        else if(jointstates->name[i] == "left_arm_joint"){
+            if(jointstates->position.size() > 0){
+                rejoint_state.position[i] = arm_joint_state.position[1];
+            }
+            if(jointstates->velocity.size() > 0){
+                rejoint_state.velocity[i] = arm_joint_state.velocity[1];
+            }
+            if(jointstates->effort.size() > 0){
+                rejoint_state.effort[i] = arm_joint_state.effort[1];
             }
         }
     }
@@ -61,6 +83,33 @@ void ChangeJointStates::dyna_jointstate_callback(const sensor_msgs::msg::JointSt
     }
 }
 
+void ChangeJointStates::arm_jointstate_callback(const sensor_msgs::msg::JointState::SharedPtr jointstates){
+    for (long unsigned int i=0; i<jointstates->position.size(); i++){
+        if(jointstates->name[i] == "right_arm_joint"){
+            if(jointstates->position.size() > 0){
+                arm_joint_state.position[0] = jointstates->position[i];
+            }
+            if(jointstates->velocity.size() > 0){
+                arm_joint_state.velocity[0] = jointstates->velocity[i];
+            }
+            if(jointstates->effort.size() > 0){
+                arm_joint_state.effort[0] = jointstates->effort[i];
+            }
+        }
+        else if(jointstates->name[i] == "left_arm_joint"){
+            if(jointstates->position.size() > 0){
+                arm_joint_state.position[1] = jointstates->position[i];
+            }
+            if(jointstates->velocity.size() > 0){
+                arm_joint_state.velocity[1] = jointstates->velocity[i];
+            }
+            if(jointstates->effort.size() > 0){
+                arm_joint_state.effort[1] = jointstates->effort[i];
+            }
+        }
+    }
+}
+
 ChangeJointStates::ChangeJointStates(
     const rclcpp::NodeOptions& options
 ): ChangeJointStates("", options){}
@@ -75,9 +124,14 @@ ChangeJointStates::ChangeJointStates(
         std::bind(&ChangeJointStates::jointstate_callback, this, _1));
 
     sub_dyna_joint_state = this->create_subscription<sensor_msgs::msg::JointState>(
-        "/dynasama",
+        "/dyna_joint_state",
         rclcpp::QoS(10),
         std::bind(&ChangeJointStates::dyna_jointstate_callback, this, _1));
+
+    sub_arm_joint_state = this->create_subscription<sensor_msgs::msg::JointState>(
+        "/arm_joint_state",
+        rclcpp::QoS(10),
+        std::bind(&ChangeJointStates::arm_jointstate_callback, this, _1));        
     
 
     pub_joint_state = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", rclcpp::QoS(10));
@@ -103,14 +157,30 @@ ChangeJointStates::ChangeJointStates(
         rejoint_state.velocity.push_back(0.0);
         rejoint_state.effort.push_back(0.0);
     }
+
+    // dynamixelの角度情報の初期化
     dyna_joint_state.name.clear();
     dyna_joint_state.position.clear();
     dyna_joint_state.velocity.clear();
     dyna_joint_state.effort.clear();
-    dyna_joint_state.name.push_back("camera_joint");
+    dyna_joint_state.name.push_back("azure_camera_joint");
     dyna_joint_state.position.push_back(0.0);
     dyna_joint_state.velocity.push_back(0.0);
-    dyna_joint_state.effort.push_back(0.0);        
+    dyna_joint_state.effort.push_back(0.0);  
+
+    // 把持機構の角度情報の初期化
+    arm_joint_state.name.clear();
+    arm_joint_state.position.clear();
+    arm_joint_state.velocity.clear();
+    arm_joint_state.effort.clear();
+    arm_joint_state.name.push_back("right_arm_joint");
+    arm_joint_state.name.push_back("left_arm_joint");
+    arm_joint_state.position.push_back(0.0);
+    arm_joint_state.velocity.push_back(0.0);
+    arm_joint_state.effort.push_back(0.0);      
+    arm_joint_state.position.push_back(0.0);
+    arm_joint_state.velocity.push_back(0.0);
+    arm_joint_state.effort.push_back(0.0); 
 }
 
 int main(int argc, char * argv[]){

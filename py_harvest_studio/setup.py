@@ -23,6 +23,7 @@ setup(
         'console_scripts': [
             'tomato_detector = py_harvest_studio.tomato_detector:main',
             'tomato_detector_zero = py_harvest_studio.tomato_detector_zero:main',
+            'arm_sample_publisher = py_harvest_studio.raspberry_pi.arm_sample_publisher:main',
         ],
     },
 )
