@@ -27,9 +27,13 @@ set(msg_files
   "msg/FruitDataList.msg"
 )
 
+set(srv_files
+  "srv/FruitPositionData.srv"
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
-
+  ${srv_files}
   DEPENDENCIES std_msgs
 )
 
