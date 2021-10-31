@@ -8,7 +8,7 @@
 #include <rclcpp/qos.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <std_msgs/msg/float32_multi_array.hpp>
-#include "harvest_studio_msg/srv/fruit_position_data.hpp"
+#include <harvest_studio_msg/srv/fruit_position_data.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -25,8 +25,11 @@ using namespace std::chrono_literals;
 
 using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
 
-float *create_eef_motion(float radius){
-
+// エンドエフェクタの角度の生成を行う
+void create_eef_motion(float angle[], float radius){
+    for (int i = 0; i < 3; i++){
+        angle[i] = 0.0*radius;
+    }
 }
 
 double to_radians(const double deg_angle)
@@ -63,7 +66,7 @@ int main(int argc, char * argv[]){
         node->create_publisher<std_msgs::msg::Float32MultiArray>("/hand_goal", rclcpp::QoS(10));
 
     auto request = std::make_shared<harvest_studio_msg::srv::FruitPositionData::Request>();
-    request.order = true;
+    request->order = true;
 
     MoveGroupInterface move_group(node, "xarm5");
     move_group.setMaxVelocityScalingFactor(1.0);
@@ -74,6 +77,8 @@ int main(int argc, char * argv[]){
     geometry_msgs::msg::Pose target_pose;
     tf2::Quaternion q;
 
+    std_msgs::msg::Float32MultiArray eef_data;
+
     // 初期姿勢
     if (move_group.setNamedTarget("home")){
         move_group.move();
@@ -82,7 +87,7 @@ int main(int argc, char * argv[]){
 
     float x, y, z, radius;
     bool success;
-    float eef_angle;
+    float eef_angle[] = {0.0, 0.0, 0.0};
 
 
     while (rclcpp::ok()){
@@ -111,6 +116,11 @@ int main(int argc, char * argv[]){
           RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service fruit_position_data");
         }
 
+        // false(正しい値じゃない)場合、この先のアーム動作生成にはデータを送らない
+        if (!success){
+            continue;
+        }
+        
         // アームの動作生成
         // 果実位置まで移動
         target_pose.position.x = x;
@@ -119,14 +129,23 @@ int main(int argc, char * argv[]){
         q.setRPY(to_radians(0), to_radians(0), to_radians(0));
         target_pose.orientation = tf2::toMsg(q);
         if (move_group.setPoseTarget(target_pose)){
-            move_group.move()        
+            move_group.move();        
             // ハンドの機動→キャッチまで
             // 吸引軸伸ばす＆ポンプ駆動
-            pub_eef->publish([0,0,0]);
+            for (int i=0; i<3; i++){
+                eef_data.data.push_back(0.0);
+            }
+            pub_eef->publish(eef_data);
+            eef_data.data.clear();
             
             // キャッチ
-            *eef_angle = create_eef_motion(radius);
-            pub_eef->publish(eef_angle);
+            create_eef_motion(eef_angle, radius);
+            for (int i=0; i<3; i++){
+                eef_data.data.push_back(eef_angle[0]);
+            }
+            
+            pub_eef->publish(eef_data);
+            eef_data.data.clear();
 
             // エフェクタ軸回転
             joint_values = move_group.getCurrentJointValues();
@@ -142,15 +161,21 @@ int main(int argc, char * argv[]){
             }
 
             // キャッチの完了→果実を置くところへ移動
-            target_pose.position(0,0,0);
+            target_pose.position.x = 0.0;
+            target_pose.position.y = 0.0;
+            target_pose.position.z = 0.0;
             q.setRPY(to_radians(0), to_radians(0), to_radians(0));
             target_pose.orientation = tf2::toMsg(q);
             if (move_group.setPoseTarget(target_pose)){
-                move_group.move()    
+                move_group.move();    
             }
 
             //　ハンドの把持を解除
-            pub_eef->publish([0,0,0]);
+            for (int i=0; i<3; i++){
+                eef_data.data.push_back(0.0);
+            }
+            pub_eef->publish(eef_data);
+            eef_data.data.clear();
         }
 
         else{
