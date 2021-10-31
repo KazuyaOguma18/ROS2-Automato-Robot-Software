@@ -1,8 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <std_msgs/msg/float32_multi_array.hpp>
-#include "ros2_harvest_studio/msg/fruit_data_list.hpp"
-/*自作msgの作成方法チェック*/
+#include "harvest_studio_msg/srv/fruit_position_data.hpp"
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
@@ -11,14 +10,21 @@
 using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
 
 class GenerateMotionPoint : public rclcpp::Node{
+protected:
+    float fruit_data[4]; // (x,y,z,radius)
+
 private:
-    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr hand_pub;
+    rclcpp::Service<harvest_studio_msg::srv::FruitPositionData>::SharedPtr fruit_service;
+    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_eef;
     
-    rclcpp::Subscription<ros2_harvest_studio/msg/FruitFataList>::SharedPtr fruit_data_sub;
-    /* data */
+    void fruit_position_data_callback(const std::shared_ptr<harvest_studio_msg::srv::FruitPositionData::Request> request,
+                                        std::shared_ptr<harvest_studio_msg::srv::FruitPositionData::Response> response);
 public:
-    GenerateMotionPoint
-(/* args */);
-    ~GenerateMotionPoint
-();
+    GenerateMotionPoint(
+        const rclcpp::NodeOptions& options = rclcpp::NodeOptions()
+    );
+    GenerateMotionPoint(
+        const std::string& name_space,
+        const rclcpp::NodeOptions& options = rclcpp::NodeOptions()
+    );
 };
