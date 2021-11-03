@@ -13,9 +13,10 @@ import math
 def get_depth_at_pixel(depth_frame, pixel_x, pixel_y):
     return depth_frame.as_depth_frame().get_distance(round(pixel_x), round(pixel_y))
 
-def convert_depth_pixel_to_metric_coordinate(depth, pixel_x, pixel_y, x_1, x_2, y_1, y_2, sum_depth, intrinsics):
+
+def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_depth, intrinsics):
     
-    ''' 
+    '''
    if intrinsics:
         result1 = rs.rs2_deproject_pixel_to_point(intrinsics, [x_1, y_1], depth)
         result2 = rs.rs2_deproject_pixel_to_point(intrinsics, [x_2, y_1], depth)
@@ -34,8 +35,6 @@ def convert_depth_pixel_to_metric_coordinate(depth, pixel_x, pixel_y, x_1, x_2, 
     theta_x_2 = math.atan(x_2*math.tan(math.radians(69.4/2)))
     theta_y_1 = math.atan(y_1*math.tan(math.radians(42.5/2)))
     theta_y_2 = math.atan(y_2*math.tan(math.radians(42.5/2)))
-    theta_x = math.atan(pixel_x*math.tan(math.radians(69.4/2)))
-    theta_y = math.atan(pixel_y*math.tan(math.radians(42.5/2)))
     X_1 = int(depth* math.tan(theta_x_1) )
     X_2 = int(depth* math.tan(theta_x_2) )
     Y_1 = int(depth* math.tan(theta_y_1) )
@@ -46,14 +45,14 @@ def convert_depth_pixel_to_metric_coordinate(depth, pixel_x, pixel_y, x_1, x_2, 
     else:
         radius = abs((Y_2 - Y_1)/2)
 
-       
+    '''  
     X = int(depth + radius* math.tan(theta_x))
     Y = int((-1)* (depth + radius* math.tan(theta_y)))
-    ''' 
-    X = int((X_1 + X_2) / 2)
-    Y = int((Y_1 + Y_2) / 2)
-
     '''
+    X = int((X_1 + X_2) / 2)
+    Y = int((-1)*((Y_1 + Y_2) / 2))
+
+    
     Z = int(depth + radius)
     print(depth)
     

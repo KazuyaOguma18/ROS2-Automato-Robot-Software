@@ -30,7 +30,7 @@ def rs_depth_counter(depth_select ,k):
     sum_depth_counter = 0
     av = 0
     for_ave_sum = 0
-    # print(max(d_list))
+    print(max(d_list))
     for n in range(len(d_list)):
         
         if d_list[n]- up < 10:

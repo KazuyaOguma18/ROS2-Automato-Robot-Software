@@ -23,6 +23,7 @@ class FruitDataProcessor(Node):
         super().__init__('fruit_data_processor')
         self.position_service_ = self.create_service(FruitPositionData, 'fruit_position_data', self.fruit_server_callback)
         self.fruit_status_publisher_ = self.create_publisher(Bool, 'fruit_detect_status', 10)
+        self.harvest_list_publisher_ = self.create_publisher(FruitDataList, 'harvest_list', 10)
         self.list_subscriber_ = self.create_subscription(FruitDataList , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
 
         self.timer = self.create_timer(0.5, self.timer_callback)
@@ -48,6 +49,18 @@ class FruitDataProcessor(Node):
         self.check_duplicate_fruits(msg)
         self.get_fruit_position_average()
         self.fruit_position_linear_tf()
+
+        # 実際に収穫を行う果実の情報を出力
+        harvest_list = FruitDataList()
+
+        for i in range(len(self.x)):
+            harvest_list.x.append(self.x[i])
+            harvest_list.y.append(self.y[i])
+            harvest_list.z.append(self.z[i])
+            harvest_list.radius.append(self.radius[i])
+
+        self.harvest_list_publisher_.publish(harvest_list)
+
 
 
     # 検出された果実が過去に検出された果実とかぶっていないかチェック
@@ -139,26 +152,27 @@ class FruitDataProcessor(Node):
 
     # generate_motion_point から果実位置取得命令が出たときのコールバック
     def fruit_server_callback(self, request, responce):
-        if request.order == True:
+        if request.order == True and len(self.x) > 0:
             i = 0
 
             # 五回以上検出された信頼性のある果実から収穫
             while self.detect_number[i] < 5:
                 i += 1
 
-            responce.x = self.x[i]
-            responce.y = self.y[i]
-            responce.z = self.z[i]
-            responce.radius = self.radius[i]
-            responce.success = True
-
-            # 収穫データとして送信されたデータは削除
-            # 削除された直後に収穫完了する前に新たに検出されて、また配列に入りそうな予感
-            del self.x[i]
-            del self.y[i]
-            del self.z[i]
-            del self.radius[i]
-            del self.detect_number[i]
+            if len(self.x) >= i+1:
+                responce.x = self.x[i]
+                responce.y = self.y[i]
+                responce.z = self.z[i]
+                responce.radius = self.radius[i]
+                responce.success = True
+    
+                # 収穫データとして送信されたデータは削除
+                # 削除された直後に収穫完了する前に新たに検出されて、また配列に入りそうな予感
+                del self.x[i]
+                del self.y[i]
+                del self.z[i]
+                del self.radius[i]
+                del self.detect_number[i]
 
         else:
             responce.x = 0.0

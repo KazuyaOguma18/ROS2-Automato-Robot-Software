@@ -83,7 +83,8 @@ class TomatoDetector(Node):
         fps = 30.
         delay = 1/fps*0.5
         
-        rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
+        # rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
+        rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
         rs_ts.registerCallback(self.rs_image_callback)
         '''
         azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
@@ -151,8 +152,9 @@ class TomatoDetector(Node):
     #  tfにより位置関係を取得し座標変換
     def rs_image_callback(self, color_msg, depth_msg):
         self.rs_color_image = self.process_image(self.height_color, self.width_color, color_msg, "bgr8")
-        self.rs_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, depth_msg.encoding)
-        cv2.imshow("n_depth", self.rs_depth_image)
+        depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, "16UC1")
+        self.rs_depth_image = depth_image.astype(np.uint16)
+        # cv2.imshow("n_depth", self.rs_depth_image)
         # self.get_logger().info(str(max(self.rs_depth_image)))
         self.color_image_callback(mode="rs" ,child_frame="", camera_frame="", buffer="")
         
@@ -243,15 +245,12 @@ class TomatoDetector(Node):
 
         # 各変数の初期化
         length = 0
-        TDbox = []
         quantity = []
         X_c = 0
         Y_c = 0
         value = 0
         auto = False
         first = False
-        search = False
-        # tomato_image = cv2.resize(cv2.imread("tomato.jpg"), dsize=(1280,720))
         detect_count = 0
         max_scale = 3.0
         Position_X = []
@@ -262,6 +261,8 @@ class TomatoDetector(Node):
         return_mode = False
 
         while True:
+            t1 = time.time()
+
             if length == 0:
                 auto = True
             if auto == True:
@@ -272,25 +273,23 @@ class TomatoDetector(Node):
                     quantity = []
                     valuezoom = []
                     random_line = []
-                    value_max = False
                     X_c = -1
                     Y_c = -1
                 elif value != max_scale:
                     value += 0.5
-                    value_max = False
+
                 elif value == max_scale:
                     value = 0.5
                     X_c += 1
-                    value_max = True
+
                 if X_c == 2:
                     Y_c += 1
                     X_c = -1
                 if return_mode == True:
                     return Position_X, Position_Y, Position_Z, Radius
 
-                if X_c == 1 and Y_c == 1 and value_max == True:
+                if X_c == 1 and Y_c == 1 and value == max_scale:
                     return_mode = True
-
 
                 random_line.append([X_c, Y_c])
                 valuezoom.append(value)
@@ -381,13 +380,18 @@ class TomatoDetector(Node):
 
                     else:
                         y[k] = np.diff(y[k])
-                        
+                        pixel_x, pixel_y = focuspoint.calculate_FocusPoint(k, boxes, X_c, Y_c, scale, 1)
+                        dist = depth_image[int(pixel_y*self.height_depth)][int(pixel_x*self.width_depth)]
                         _y = list(y[k])
-                        max_depth.append(_y.index(max(_y)))
+                        if dist >= _y.index(max(_y)):
+                            max_depth.append(dist)
+                        else:
+                            max_depth.append(_y.index(max(_y)))
+
                 else:
                     continue
 
-            
+            t2 = time.time()
 
             #x軸とy軸をピクセル単位からメートル単位へ変換
             i = 0
@@ -395,25 +399,33 @@ class TomatoDetector(Node):
             for k in range(length):
                 if names_show[k] == 'tomato':
                     if len(max_depth) > i:
-                        pixel_x ,pixel_y, pixel_x_left, pixel_x_right, pixel_y_up, pixel_y_low = focuspoint.calculate_FocusPoint(k ,boxes ,X_c, Y_c ,scale)
-                        X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x, pixel_y, pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], intrinsics)
+                        pixel_x_left, pixel_x_right, pixel_y_up, pixel_y_low = focuspoint.calculate_FocusPoint(k ,boxes ,X_c, Y_c ,scale, 2)
+                        X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], intrinsics)
                         Position_X.append(float(X_meter))
                         Position_Y.append(float(Y_meter))
                         Position_Z.append(float(Z_meter))
                         Radius.append(float(radius))
                         Tomato_Class.append(predicted[k])
+                        
                         cv2.putText(image_np, '(%d,%d,%d)'%(X_meter,Y_meter,Z_meter), (int((boxes[k][1] + (boxes[k][3]-boxes[k][1])/2)*self.width_color-120), int((boxes[k][0] + (boxes[k][2]-boxes[k][0])/2)*self.height_color)), cv2.FONT_ITALIC, 1.0, (255, 255, 255), thickness=2)
                         cv2.putText(image_np, '(%d,)'%(predicted[k]), (int((boxes[k][1] + (boxes[k][3]-boxes[k][1])/2)*self.width_color-120), int((boxes[k][0] + (boxes[k][2]-boxes[k][0])/2)*self.height_color-50)), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), thickness=2)
-                        i = i + 1
+                        i += 1
                     else:
                         continue
                 else:
                     continue
 
+            cv2.putText(image_np, 'FPS : '+str(round(1/(t2-t1), 2)), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), thickness=2)
             cv2.imshow('tomato', image_np)
-            cv2.imshow('depth', depth_image)
+            # cv2.imshow('depth', depth_image)
+            '''
+            bridge = CvBridge()
+            image_msg = bridge.cv2_to_imgmsg(image_np, encoding="bgr8")
+            image_msg.header.stamp = self.get_clock().now().to_msg()
+            image_msg.header.frame_id = "camera_color_frame"
+            self.image_publisher.publish(image_msg)
+            '''
             cv2.waitKey(1)
-
         
 
 

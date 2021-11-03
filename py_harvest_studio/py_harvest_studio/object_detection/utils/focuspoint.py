@@ -37,7 +37,7 @@ def ajust_FocusPoint(k, boxes, focuspoint, scale):
 
     return ajust_pixel_x_center, ajust_pixel_y_center, ajust_pixel_x_left, ajust_pixel_x_right
 
-def calculate_FocusPoint(k, boxes, X_c, Y_c, scale):
+def calculate_FocusPoint(k, boxes, X_c, Y_c, scale, mode):
     pixel_x = boxes[k][1] + (boxes[k][3]-boxes[k][1])/2
     pixel_y = boxes[k][0] + (boxes[k][2]-boxes[k][0])/2
 
@@ -48,7 +48,11 @@ def calculate_FocusPoint(k, boxes, X_c, Y_c, scale):
     cal_Y_up = (boxes[k][0] /scale - 0.5)*2 + (X_c + 1)*(scale - 1)/scale
     cal_Y_low = (boxes[k][2] /scale - 0.5)*2 + (X_c + 1)*(scale - 1)/scale
 
-    return cal_X, cal_Y, cal_X_left, cal_X_right, cal_Y_up, cal_Y_low
+    if mode == 1:
+        return cal_X, cal_Y
+
+    elif mode == 2:
+        return cal_X_left, cal_X_right, cal_Y_up, cal_Y_low
 
 def calculate_image(image1, value, X_c, Y_c):
     height, width = image1.shape[:2]

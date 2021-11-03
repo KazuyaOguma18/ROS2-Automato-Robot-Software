@@ -49,7 +49,7 @@ include_directories(
 
 function(custom_executable target)
   add_executable(${target} src/${target}.cpp)
-  ament_target_dependencies(${target} "rclcpp" "std_msgs" "sensor_msgs" "dynamixel_sdk" "geometry_msgs" "moveit_ros_planning_interface" "tf2_geometry_msgs" "harvest_studio_msg")
+  ament_target_dependencies(${target} "rclcpp" "std_msgs" "sensor_msgs" "dynamixel_sdk" "geometry_msgs" "moveit_ros_planning_interface" "tf2_geometry_msgs" "harvest_studio_msg" "visualization_msgs")
   install(TARGETS ${target} DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
@@ -57,6 +57,7 @@ custom_executable(change_joint_states)
 custom_executable(camera2dynamixel)
 custom_executable(dyna_angle_publisher)
 custom_executable(generate_motion_point)
+custom_executable(add_rviz_marker)
 
 
 # ament_export_dependencies(rosidl_default_runtime)

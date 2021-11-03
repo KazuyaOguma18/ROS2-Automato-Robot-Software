@@ -79,7 +79,7 @@ class TomatoDetector(Node):
         fps = 30.
         delay = 1/fps*0.5
         
-        rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
+        rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
         rs_ts.registerCallback(self.rs_image_callback)
         '''
         azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
@@ -147,8 +147,9 @@ class TomatoDetector(Node):
     #  tfにより位置関係を取得し座標変換
     def rs_image_callback(self, color_msg, depth_msg):
         self.rs_color_image = self.process_image(self.height_color, self.width_color, color_msg, "bgr8")
-        self.rs_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, depth_msg.encoding)
-        cv2.imshow("n_depth", self.rs_depth_image)
+        depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, depth_msg.encoding)
+        self.rs_depth_image = depth_image.astype(np.uint8)
+        # cv2.imshow("n_depth", self.rs_depth_image)
         # self.get_logger().info(str(max(self.rs_depth_image)))
         self.color_image_callback(mode="rs" ,child_frame="", camera_frame="", buffer="")
         
@@ -354,8 +355,14 @@ class TomatoDetector(Node):
                     continue
             else:
                 continue
-        cv2.imshow('tomato', image_np)
-        cv2.imshow('depth', depth_image)
+        # cv2.imshow('tomato', image_np)
+        # cv2.imshow('depth', depth_image)
+        bridge = CvBridge()
+        image_msg = bridge.cv2_to_imgmsg(image_np, encoding="bgr8")
+        image_msg.header.stamp = self.get_clock().now().to_msg()
+        image_msg.header.frame_id = "camera_color_frame"
+        self.image_publisher.publish(image_msg)
+
         cv2.waitKey(1)
 
         return Position_X, Position_Y, Position_Z, Radius

@@ -3,18 +3,9 @@ import sys
 import cv2
 import numpy as np
 import os
-import six.moves.urllib as urllib
-import tarfile
 import tensorflow as tf
-import zipfile
 import time
 import pyrealsense2 as rs
-import math
-from collections import defaultdict
-from io import StringIO
-from matplotlib import pyplot as plt
-from PIL import Image
-import random
 
 sys.path.append("..")
 from utils import label_map_util
@@ -22,18 +13,19 @@ from utils import visualization_utils as vis_util
 from utils import realsense_color as rs_color
 from utils import realsense_depth_count as rs_depth
 from utils import image_division as imdiv
-from utils import realsense_depth_distance as rs_dis
+from utils import realsense_depth_distance2 as rs_dis
 from utils import focuspoint
 from PIL import Image
 
 # What model to download.
-MODEL_NAME = '/home/ikedalab/catkin_ws/src/xarm_ros/xarm_planner/object_detection/tomato_graph'
+PACKAGE_NAME = '/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/py_harvest_studio/py_harvest_studio'
+MODEL_NAME = PACKAGE_NAME + '/object_detection/tomato_graph'
 
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
 PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
 
 # List of the strings that is used to add correct label for each box.
-PATH_TO_LABELS = os.path.join('/home/ikedalab/catkin_ws/src/xarm_ros/xarm_planner/object_detection/training', 'object-detection.pbtxt')
+PATH_TO_LABELS = os.path.join(PACKAGE_NAME + '/object_detection/training', 'object-detection.pbtxt')
 
 NUM_CLASSES = 2
 
@@ -159,7 +151,7 @@ class Net(nn.Module):
 
 net = Net()
 
-param = torch.load('/home/ikedalab/catkin_ws/src/xarm_ros/xarm_planner/object_detection/train_model/weight.pth')
+param = torch.load(PACKAGE_NAME + '/object_detection/train_model/weight.pth')
 net.load_state_dict(param)
 
 with detection_graph.as_default():
@@ -328,10 +320,10 @@ with detection_graph.as_default():
             t2 = time.time()
 
             #可視化
-            if detect_count != 5 :
-                image_np = color_image
-                cv2.putText(image_np, 'Searching...', (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (255, 255, 255), thickness=7)
-                cv2.putText(image_np, 'Searching...', (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (0, 0, 0), thickness=4)
+            #if detect_count != 5 :
+                #image_np = color_image
+                #cv2.putText(image_np, 'Searching...', (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (255, 255, 255), thickness=7)
+                #cv2.putText(image_np, 'Searching...', (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (0, 0, 0), thickness=4)
                 
             cv2.putText(image_np, 'FPS : '+str(round(1/(t2-t1), 2)), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), thickness=2)
             image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
