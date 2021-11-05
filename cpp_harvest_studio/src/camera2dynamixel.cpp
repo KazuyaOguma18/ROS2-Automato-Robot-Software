@@ -366,7 +366,7 @@ void Camera2Dynamixel::timer_callback(){
             joint_positions_rad.push_back(joint_positions_dxl[i]);
             
         }
-        RCLCPP_INFO(this->get_logger(), "%.4f", joint_positions_dxl[0]);
+        // RCLCPP_INFO(this->get_logger(), "%.4f", joint_positions_dxl[0]);
         // サーボ角度の配信
         jointstate.name.clear();
         jointstate.position.clear();

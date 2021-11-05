@@ -29,13 +29,13 @@ void AddRvizMarker::detect_list_callback(const harvest_studio_msg::msg::FruitDat
         marker.markers[i].action = visualization_msgs::msg::Marker::ADD;
         marker.markers[i].lifetime = rclcpp::Duration(1s);
 
-        marker.markers[i].scale.x = detect_list->radius[i]*0.001;
-        marker.markers[i].scale.y = detect_list->radius[i]*0.001;
-        marker.markers[i].scale.z = detect_list->radius[i]*0.001;
+        marker.markers[i].scale.x = detect_list->radius[i];
+        marker.markers[i].scale.y = detect_list->radius[i];
+        marker.markers[i].scale.z = detect_list->radius[i];
 
-        marker.markers[i].pose.position.x = detect_list->x[i]*0.001;
-        marker.markers[i].pose.position.y = detect_list->y[i]*0.001;
-        marker.markers[i].pose.position.z = detect_list->z[i]*0.001;
+        marker.markers[i].pose.position.x = detect_list->x[i];
+        marker.markers[i].pose.position.y = detect_list->y[i];
+        marker.markers[i].pose.position.z = detect_list->z[i];
         marker.markers[i].pose.orientation.x = 0;
         marker.markers[i].pose.orientation.y = 0;
         marker.markers[i].pose.orientation.z = 0;

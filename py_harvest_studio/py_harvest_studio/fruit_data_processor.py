@@ -7,6 +7,7 @@
 ・複数のpubやsubを行うことができるのかサンプルコードを作成して動作確認を行っていく
 """
 
+from os import stat
 import rclpy
 from rclpy.node import Node
 
@@ -184,11 +185,14 @@ class FruitDataProcessor(Node):
         return responce
 
     def timer_callback(self):
+        status = Bool()
         if len(self.x) > 0:
-            self.fruit_status_publisher_.publish(True)
+            status.data = True
+            self.fruit_status_publisher_.publish(status)
         
         else:
-            self.fruit_status_publisher_.publish(False)
+            status.data = False
+            self.fruit_status_publisher_.publish(status)
 
 
 

@@ -58,9 +58,9 @@ class TomatoDetector(Node):
         
         video_qos = qos.QoSProfile(depth=10)
         video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
-        rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
-        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
-        self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
+        rs_color_subscriber = message_filters.Subscriber(self, Image, '/rs/camera/color/image_raw', **{'qos_profile': video_qos})
+        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/rs/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
+        self.sub_rs_info = self.create_subscription(CameraInfo, '/rs/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
         self.rs_intrinsics = None
         self.publisher_ = self.create_publisher(FruitDataList, 'fruit_detect_list', 10)
         self.image_publisher = self.create_publisher(Image, '/fruit_detect_image', qos_profile_sensor_data)
@@ -212,9 +212,9 @@ class TomatoDetector(Node):
                 fruit_position_y.append(trans.transform.translation.y)
                 fruit_position_z.append(trans.transform.translation.z)
                 """
-                fruit_position_x.append(x[i])
-                fruit_position_y.append(y[i])
-                fruit_position_z.append(z[i])
+                fruit_position_x.append(x[i]*0.001)
+                fruit_position_y.append(y[i]*0.001)
+                fruit_position_z.append(z[i]*0.001)
 
             # 得られた位置情報をpublish
             pos_data = FruitDataList()

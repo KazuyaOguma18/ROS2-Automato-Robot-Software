@@ -25,6 +25,7 @@ setup(
             'tomato_detector_zero = py_harvest_studio.tomato_detector_zero:main',
             'arm_sample_publisher = py_harvest_studio.raspberry_pi.arm_sample_publisher:main',
             'sample_depth_center = py_harvest_studio.sample_depth_center:main',
+            'sample_tomato_data_publisher = py_harvest_studio.sample_tomato_data_publisher:main',
         ],
     },
 )
