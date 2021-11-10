@@ -67,13 +67,13 @@ void AddRvizMarker::harvest_list_callback(const harvest_studio_msg::msg::FruitDa
         marker.markers[i].action = visualization_msgs::msg::Marker::ADD;
         marker.markers[i].lifetime = rclcpp::Duration(1s);
 
-        marker.markers[i].scale.x = harvest_list->radius[i]*0.001;
-        marker.markers[i].scale.y = harvest_list->radius[i]*0.001;
-        marker.markers[i].scale.z = harvest_list->radius[i]*0.001;
+        marker.markers[i].scale.x = harvest_list->radius[i];
+        marker.markers[i].scale.y = harvest_list->radius[i];
+        marker.markers[i].scale.z = harvest_list->radius[i];
 
-        marker.markers[i].pose.position.x = harvest_list->x[i]*0.001;
-        marker.markers[i].pose.position.y = harvest_list->y[i]*0.001;
-        marker.markers[i].pose.position.z = harvest_list->z[i]*0.001;
+        marker.markers[i].pose.position.x = harvest_list->x[i];
+        marker.markers[i].pose.position.y = harvest_list->y[i];
+        marker.markers[i].pose.position.z = harvest_list->z[i];
         marker.markers[i].pose.orientation.x = 0;
         marker.markers[i].pose.orientation.y = 0;
         marker.markers[i].pose.orientation.z = 0;
@@ -100,13 +100,13 @@ void AddRvizMarker::harvest_target_callback(const harvest_studio_msg::msg::Fruit
     marker.action = visualization_msgs::msg::Marker::ADD;
     marker.lifetime = rclcpp::Duration(1s);
 
-    marker.scale.x = harvest_target->radius[0]*0.001;
-    marker.scale.y = harvest_target->radius[0]*0.001;
-    marker.scale.z = harvest_target->radius[0]*0.001;
+    marker.scale.x = harvest_target->radius[0];
+    marker.scale.y = harvest_target->radius[0];
+    marker.scale.z = harvest_target->radius[0];
 
-    marker.pose.position.x = harvest_target->x[0]*0.001;
-    marker.pose.position.y = harvest_target->y[0]*0.001;
-    marker.pose.position.z = harvest_target->z[0]*0.001;
+    marker.pose.position.x = harvest_target->x[0];
+    marker.pose.position.y = harvest_target->y[0];
+    marker.pose.position.z = harvest_target->z[0];
     marker.pose.orientation.x = 0;
     marker.pose.orientation.y = 0;
     marker.pose.orientation.z = 0;
