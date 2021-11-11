@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot
   name="harvest_studio" xmlns:xacro="http://ros.org/wiki/xacro">
-  <link name="dummy">
-  </link>
   <link
     name="stand_base">
     <inertial>
@@ -43,10 +41,6 @@
       </geometry>
     </collision>
   </link>
-    <joint name="dummy_joint" type="fixed">
-    <parent link="dummy"/>
-    <child link="stand_base"/>
-  </joint>
   <link
     name="azure_camera_link">
     <inertial>

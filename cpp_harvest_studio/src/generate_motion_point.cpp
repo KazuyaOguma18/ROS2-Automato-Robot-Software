@@ -37,6 +37,26 @@ double to_radians(const double deg_angle)
   return deg_angle * M_PI / 180.0;
 }
 
+double calc_yaw(double x, double y){
+    double yaw;
+    if (x==0.0){
+        if (y > 0.0){
+            yaw = M_PI_2;
+        }
+        else if (y < 0.0){
+            yaw = -M_PI_2;
+        }
+        else{
+            yaw = 0.0;
+        }
+    }
+    else{
+        yaw = atan(y/x);
+    }
+
+    return yaw;
+}
+
 /*
 GenerateMotionPoint::GenerateMotionPoint(
     const rclcpp::NodeOptions& options
@@ -68,7 +88,9 @@ int main(int argc, char * argv[]){
     auto request = std::make_shared<harvest_studio_msg::srv::FruitPositionData::Request>();
     request->order = true;
 
-    MoveGroupInterface move_group(node, "xarm5");
+    RCLCPP_INFO(rclcpp::get_logger("GMP"), "initialize MoveGroupInterface");
+    static const std::string PLANNING_GROUP = "xarm5";
+    MoveGroupInterface move_group(node, PLANNING_GROUP);
     move_group.setMaxVelocityScalingFactor(1.0);
     move_group.setMaxAccelerationScalingFactor(1.0);
     auto joint_values = move_group.getCurrentJointValues();
@@ -106,14 +128,14 @@ int main(int argc, char * argv[]){
         if (rclcpp::spin_until_future_complete(node, result) ==
           rclcpp::FutureReturnCode::SUCCESS)
         {
-          RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Recieved Fruit Position Data!");
+          RCLCPP_INFO(rclcpp::get_logger("GMP"), "Recieved Fruit Position Data!");
           x = result.get()->x;
           y = result.get()->y;
           z = result.get()->z;
           radius = result.get()->radius;
           success = result.get()->success;
         } else {
-          RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service fruit_position_data");
+          RCLCPP_ERROR(rclcpp::get_logger("GMP"), "Failed to call service fruit_position_data");
         }
 
         // false(正しい値じゃない)場合、この先のアーム動作生成にはデータを送らない
@@ -126,7 +148,9 @@ int main(int argc, char * argv[]){
         target_pose.position.x = x;
         target_pose.position.y = y;
         target_pose.position.z = z;
-        q.setRPY(to_radians(0), to_radians(0), to_radians(0));
+        double yaw;
+        yaw = calc_yaw(x,y);
+        q.setRPY(yaw, to_radians(120.0), to_radians(0));
         target_pose.orientation = tf2::toMsg(q);
         if (move_group.setPoseTarget(target_pose)){
             move_group.move();        
@@ -161,12 +185,12 @@ int main(int argc, char * argv[]){
             }
 
             // キャッチの完了→果実を置くところへ移動
-            target_pose.position.x = 0.0;
-            target_pose.position.y = 0.0;
-            target_pose.position.z = 0.0;
-            q.setRPY(to_radians(0), to_radians(0), to_radians(0));
-            target_pose.orientation = tf2::toMsg(q);
-            if (move_group.setPoseTarget(target_pose)){
+            joint_values[0] = -98.03;
+            joint_values[1] = -72.31;
+            joint_values[2] = -1.40;
+            joint_values[3] = 73.71;
+            joint_values[4] = -98.03;
+            if (move_group.setJointValueTarget(joint_values)){
                 move_group.move();    
             }
 

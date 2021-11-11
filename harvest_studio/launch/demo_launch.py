@@ -13,6 +13,8 @@ from launch.substitutions import TextSubstitution
 from launch_ros.actions import Node
 from launch_ros.actions import PushRosNamespace
 
+import xacro
+
 def quaternion_from_euler(roll, pitch, yaw):
     """
     Converts euler roll, pitch, yaw to quaternion (w in last place)
@@ -51,6 +53,43 @@ def generate_launch_description():
                 )
             ),            
         ]
+    )
+
+    xarm_launch_include = GroupAction(
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(
+                        get_package_share_directory('xarm_moveit_config'),
+                        'launch/xarm5_moveit_fake.launch.py'
+                    )
+                )
+            ),
+        ]
+    )
+
+
+    # harvest_studio_robot
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    share_dir_path = os.path.join(get_package_share_directory('harvest_studio_description'))
+    xacro_path = os.path.join(share_dir_path, 'harvest_studio.urdf.xacro')
+    urdf_path = os.path.join(share_dir_path, 'harvest_studio.urdf')
+
+    doc = xacro.process_file(xacro_path)
+    robot_desc = doc.toprettyxml(indent='   ')
+
+    f = open(urdf_path, 'w')
+    f.write(robot_desc)
+    f.close()
+
+    hs_robot_state_pub = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='hs_robot_state_publisher',
+        output='screen',
+        # parameters=[{'use_sim_time': use_sim_time}],
+        arguments=[urdf_path],
+        remappings=[('robot_description', 'hs_robot_description')]
     )
 
 
@@ -106,15 +145,17 @@ def generate_launch_description():
 
 
     return LaunchDescription([
+        xarm_launch_include,
+        # hs_robot_state_pub,
         #rs_ns_launch_arg,
         #rs_launch_include,
-        add_rviz_marker_node,
+        #add_rviz_marker_node,
         # camera2dynamixel_node,
-        change_joint_states_node,
+        #change_joint_states_node,
         #tomato_detector_node,
         # rs_camera_tf_node,
         # generate_motion_point_node,
         # fruit_data_processor_node,
         # hand_ros2serial_node,
-        sample_detector_node,
+        #sample_detector_node,
     ])
