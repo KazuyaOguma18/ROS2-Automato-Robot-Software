@@ -95,22 +95,32 @@ int pot_rotate_control(uint16_t count){
 	static int first = 1;
 	static uint16_t start_count;
 	uint16_t need_count;
-	float pot_radius1;
-	float pot_radius2;
+
+	float pot_radius;
 	float arm_angle;
 
 	if (first == 1){
+		float a,b,c,d,w,r1,r2,A,B,C,D,E;
 		start_count = count;
 		first = 0;
 		// calculate pot radius
-		arm_angle = (read_arm_encoder_value(1)*M_PI*180 + read_arm_encoder_value(1)*M_PI*180)/2;
-		pot_radius1 = 307.5 - 222.5*sin(arm_angle) - 99.6*cos(arm_angle);
-		pot_radius2 = (-996*pow(sin(arm_angle), 2.0) + 835*sin(arm_angle) +
-				sqrt(-478699*pow(sin(arm_angle), 2.0) - 1087170*sin(arm_angle) + 4950625*pow(cos(arm_angle), 2.0) +
-				3715750*cos(arm_angle) - 2896950*sin(arm_angle)*cos(arm_angle) + 1599725) + 2225*sin(arm_angle)*cos(arm_angle) + 345)/
-				(10*(pow(sin(arm_angle), 2.0) - 1));
+		a = 212.5;
+		b = 83.5;
+		c = 222.5;
+		d = 64.58;
+		w = 190.0;
+		r1 = 68.97/2;
+		r2 = 35.0;
 
-		need_count = (uint16_t)((pot_radius1 + pot_radius2) / 2) / 10/*motor gear radius*/ * 360 * 0.25 - start_count;
+		arm_angle = (read_arm_encoder_value(1) + read_arm_encoder_value(2))*M_PI/360;
+		A = pow(a,2) + a*w - 2*(a+w/2)*(c*sin(arm_angle) + d*cos(arm_angle)) + pow(c,2) + pow(d,2) + pow(r1,2) - pow(r2,2) + 2*b*(c*cos(arm_angle) - d*sin(arm_angle)) + pow(b,2);
+		B = c*cos(arm_angle) - d*sin(arm_angle) + b;
+		C = pow((r1-r2)/2, 2)-1;
+		D = A/pow(B,2)*(r1-r2) - 2*r1;
+		E = pow(A/(2*B),2) + pow(w/2,2) - pow(r1,2);
+		pot_radius = (-D -sqrt(pow(D,2) - 4*C*E))/(2*C);
+
+		need_count = (uint16_t)pot_radius/ 10/*motor gear radius*/ * 360 * 0.25 - start_count;
 	}
 
 	if (count < need_count/4){
@@ -273,7 +283,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim2, THAL_UART_TransmitIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
   /* Start Encoder */
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
