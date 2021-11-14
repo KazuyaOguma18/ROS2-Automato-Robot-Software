@@ -58,6 +58,7 @@ custom_executable(camera2dynamixel)
 custom_executable(dyna_angle_publisher)
 custom_executable(generate_motion_point)
 custom_executable(add_rviz_marker)
+custom_executable(get_xarm_state)
 
 
 # ament_export_dependencies(rosidl_default_runtime)

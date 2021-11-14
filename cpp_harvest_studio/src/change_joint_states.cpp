@@ -10,23 +10,20 @@
 using std::placeholders::_1;
 
 void ChangeJointStates::jointstate_callback(const sensor_msgs::msg::JointState::SharedPtr jointstates){
-    rejoint_state.name.clear();
-    rejoint_state.position.clear();
-    rejoint_state.velocity.clear();
-    rejoint_state.effort.clear();
+
     rejoint_state.header.stamp = rclcpp::Clock().now();
     for(long unsigned int i=0; i<jointstates->name.size(); i++){
         if(jointstates->name.size() > 0){
-            rejoint_state.name.push_back(jointstates->name[i]);
+            rejoint_state.name[i] = jointstates->name[i];
         }
         if(jointstates->position.size() > 0){
-        rejoint_state.position.push_back(jointstates->position[i]);
+        rejoint_state.position[i] = jointstates->position[i];
         }
         if(jointstates->velocity.size() > 0){
-        rejoint_state.velocity.push_back(jointstates->velocity[i]);
+        rejoint_state.velocity[i] = jointstates->velocity[i];
         }
         if(jointstates->effort.size() > 0){
-        rejoint_state.effort.push_back(jointstates->effort[i]);
+        rejoint_state.effort[i] = jointstates->effort[i];
         }
     }
 

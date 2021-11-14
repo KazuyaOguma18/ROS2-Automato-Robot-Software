@@ -25,6 +25,7 @@ class FruitDataProcessor(Node):
         self.position_service_ = self.create_service(FruitPositionData, 'fruit_position_data', self.fruit_server_callback)
         self.fruit_status_publisher_ = self.create_publisher(Bool, 'fruit_detect_status', 10)
         self.harvest_list_publisher_ = self.create_publisher(FruitDataList, 'harvest_list', 10)
+        self.harvest_target_publisher_ = self.create_publisher(FruitDataList, 'harvest_target', 10)
         self.list_subscriber_ = self.create_subscription(FruitDataList , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
 
         self.timer = self.create_timer(0.5, self.timer_callback)
@@ -172,31 +173,44 @@ class FruitDataProcessor(Node):
 
     # generate_motion_point から果実位置取得命令が出たときのコールバック
     def fruit_server_callback(self, request, responce):
+        zero_data = False
         if request.order == True and len(self.x) > 0:
             i = 0
 
             # 五回以上検出された信頼性のある果実から収穫
-            while self.detect_number[i] < 5:
-                i += 1
+            for j in range(len(self.detect_number)):
+                if self.detect_number[j] > 5:
+                    i = j
+                    zero_data = True
 
             if len(self.x) >= i+1:
                 responce.x = self.harvest_x[i]
-                responce.y = self.y[i]
-                responce.z = self.z[i]
-                responce.radius = self.radius[i]
+                responce.y = self.harvest_y[i]
+                responce.z = self.harvest_z[i]
+                responce.radius = self.harvest_radius[i]
                 responce.success = True
+
+                harvest_target = FruitDataList()
+                harvest_target.x.append(self.harvest_x[i])
+                harvest_target.y.append(self.harvest_y[i])
+                harvest_target.z.append(self.harvest_z[i])
+                harvest_target.radius.append(self.harvest_radius[i])
+
+                self.harvest_target_publisher_.publish(harvest_target)
+
     
                 # 収穫データとして送信されたデータは削除
                 # 削除された直後に収穫完了する前に新たに検出されて、また配列に入りそうな予感
                 self.delete_fruit_data(i)
 
 
-        else:
+        elif request.order == False or zero_data == True:
             responce.x = 0.0
             responce.y = 0.0
             responce.z = 0.0
             responce.radius = 0.0
             responce.success = False
+
         
         return responce
 
@@ -206,11 +220,21 @@ class FruitDataProcessor(Node):
         del self.z[i]
         del self.radius[i]
         del self.detect_number[i]
-        
+
+        delete_index = []
+
         for j in range(len(self.duplicate_index)):
-            if i == self.duplicate_index[j][0]:
-                del self.duplicate_index[j][0]
-                del self.duplicate_index[j][1]
+            try:
+                if i == self.duplicate_index[j][0]:
+                    delete_index.append(j)
+            except:
+                self.get_logger().info("nazo error")
+
+        sorted_delete_index = sorted(delete_index, reverse=True)
+        for j in sorted_delete_index:        
+            self.get_logger().info("delete data :{0}".format(len(self.duplicate_index)))
+            del self.duplicate_index[j][1]
+            del self.duplicate_index[j][0]
 
     def timer_callback(self):
         status = Bool()

@@ -110,6 +110,7 @@ def launch_setup(context, *args, **kwargs):
 
     remappings = [
         ('follow_joint_trajectory', '{}{}_traj_controller/follow_joint_trajectory'.format(prefix.perform(context), xarm_type)),
+        ('joint_states', 'joint_states_remap'),
     ]
     controllers = ['{}{}_traj_controller'.format(prefix.perform(context), xarm_type)]
     if add_gripper.perform(context) in ('True', 'true'):

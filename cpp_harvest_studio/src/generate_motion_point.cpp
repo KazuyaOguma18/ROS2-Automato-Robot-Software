@@ -7,6 +7,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/qos.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
+
 #include <std_msgs/msg/float32_multi_array.hpp>
 #include <harvest_studio_msg/srv/fruit_position_data.hpp>
 #include <geometry_msgs/msg/pose.hpp>
@@ -20,8 +21,6 @@
 #include <cmath>
 
 using namespace std::chrono_literals;
-
-// #include "cpp_harvest_studio/generate_motion_point.hpp"
 
 using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
 
@@ -57,28 +56,23 @@ double calc_yaw(double x, double y){
     return yaw;
 }
 
-/*
-GenerateMotionPoint::GenerateMotionPoint(
-    const rclcpp::NodeOptions& options
-): GenerateMotionPoint("", options){}
-
-GenerateMotionPoint::GenerateMotionPoint(
-    const std::string& name_space,
-    const rclcpp::NodeOptions& options
-): Node("generate_motion_point", name_space, options){
-    fruit_service = this->create_service<harvest_studio_msg::srv::FruitPositionData>(
-        "fruit_position_data", 
-        &GenerateMotionPoint::fruit_position_data_callback);
-
-    pub_eef = this->create_publisher<std_msgs::msg::Float32MultiArray>("/hand_goal", rclcpp::Qos(10));
-
-}
-*/
 
 int main(int argc, char * argv[]){
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("generate_motion_point");
+    rclcpp::NodeOptions node_options;
+    node_options.automatically_declare_parameters_from_overrides(true);
+    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("generate_motion_point", node_options);
 
+    rclcpp::executors::SingleThreadedExecutor executor;
+    executor.add_node(node);
+    std::thread([&executor]() {executor.spin(); }).detach();
+
+    RCLCPP_INFO(rclcpp::get_logger("GMP"), "initialize MoveGroupInterface");
+
+    MoveGroupInterface move_group(node,"xarm5");
+
+    RCLCPP_INFO(rclcpp::get_logger("GMP"), "complete MoveGroupInterface");
+    
     rclcpp::Client<harvest_studio_msg::srv::FruitPositionData>::SharedPtr client = 
         node->create_client<harvest_studio_msg::srv::FruitPositionData>("fruit_position_data");
 
@@ -88,24 +82,28 @@ int main(int argc, char * argv[]){
     auto request = std::make_shared<harvest_studio_msg::srv::FruitPositionData::Request>();
     request->order = true;
 
-    RCLCPP_INFO(rclcpp::get_logger("GMP"), "initialize MoveGroupInterface");
-    static const std::string PLANNING_GROUP = "xarm5";
-    MoveGroupInterface move_group(node, PLANNING_GROUP);
+
     move_group.setMaxVelocityScalingFactor(1.0);
     move_group.setMaxAccelerationScalingFactor(1.0);
+    move_group.setPlanningTime(0.5);
     auto joint_values = move_group.getCurrentJointValues();
-    double GRIPPER_STATE1 = to_radians(-180);
-    double GRIPPER_STATE2 = to_radians(180);
+    double GRIPPER_STATE1 = to_radians(-360);
+    double GRIPPER_STATE2 = to_radians(360);
     geometry_msgs::msg::Pose target_pose;
+    geometry_msgs::msg::PoseStamped target_pose_stamped;
     tf2::Quaternion q;
 
     std_msgs::msg::Float32MultiArray eef_data;
 
     // 初期姿勢
-    if (move_group.setNamedTarget("home")){
-        move_group.move();
+    RCLCPP_INFO(rclcpp::get_logger("GMP"), "Pose Initialize");  
+    while (!move_group.setNamedTarget("hold-up")){
+        continue;
     }
-        
+    while (!move_group.move()){
+        continue;
+    }
+    
 
     float x, y, z, radius;
     bool success;
@@ -117,43 +115,67 @@ int main(int argc, char * argv[]){
         // 果実位置情報の呼び出し
         while (!client->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
-              RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+              RCLCPP_ERROR(rclcpp::get_logger("GMP"), "Interrupted while waiting for the service. Exiting.");
               return 0;
             }
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+            RCLCPP_INFO(rclcpp::get_logger("GMP"), "service not available, waiting again...");
         }
 
         auto result = client->async_send_request(request);
         // Wait for the result.
-        if (rclcpp::spin_until_future_complete(node, result) ==
-          rclcpp::FutureReturnCode::SUCCESS)
-        {
+        /*
+        if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS){
           RCLCPP_INFO(rclcpp::get_logger("GMP"), "Recieved Fruit Position Data!");
           x = result.get()->x;
           y = result.get()->y;
           z = result.get()->z;
           radius = result.get()->radius;
           success = result.get()->success;
-        } else {
+        } 
+        else {
           RCLCPP_ERROR(rclcpp::get_logger("GMP"), "Failed to call service fruit_position_data");
         }
+        RCLCPP_INFO(rclcpp::get_logger("GMP"), "C");
 
         // false(正しい値じゃない)場合、この先のアーム動作生成にはデータを送らない
         if (!success){
             continue;
         }
+        */
         
         // アームの動作生成
+        x = 0.4;
+        y = 0.5;
+        z = 0.5;
+        radius = 0.06;
+        RCLCPP_INFO(rclcpp::get_logger("GMP"), "Generating robot arm motion");
         // 果実位置まで移動
         target_pose.position.x = x;
         target_pose.position.y = y;
         target_pose.position.z = z;
         double yaw;
         yaw = calc_yaw(x,y);
-        q.setRPY(yaw, to_radians(120.0), to_radians(0));
-        target_pose.orientation = tf2::toMsg(q);
+        q.setRPY(0.0, to_radians(100), yaw);
+        target_pose.orientation.x = q.w();
+        target_pose.orientation.y = q.z();
+        target_pose.orientation.z = q.y();
+        target_pose.orientation.w = q.x();
+
+
+        target_pose_stamped = move_group.getRandomPose();
+        move_group.clearPoseTarget();
         if (move_group.setPoseTarget(target_pose)){
-            move_group.move();        
+            while (!move_group.move()){
+                move_group.clearPoseTarget();
+                move_group.setPoseTarget(target_pose);            
+                RCLCPP_INFO(rclcpp::get_logger("GMP"), "x: %f", target_pose.orientation.x);
+                RCLCPP_INFO(rclcpp::get_logger("GMP"), "y: %f", target_pose.orientation.y);
+                RCLCPP_INFO(rclcpp::get_logger("GMP"), "z: %f", target_pose.orientation.z);
+                RCLCPP_INFO(rclcpp::get_logger("GMP"), "w: %f", target_pose.orientation.w);
+                continue;
+            }
+
+
             // ハンドの機動→キャッチまで
             // 吸引軸伸ばす＆ポンプ駆動
             for (int i=0; i<3; i++){
@@ -161,7 +183,7 @@ int main(int argc, char * argv[]){
             }
             pub_eef->publish(eef_data);
             eef_data.data.clear();
-            
+
             // キャッチ
             create_eef_motion(eef_angle, radius);
             for (int i=0; i<3; i++){
@@ -185,11 +207,12 @@ int main(int argc, char * argv[]){
             }
 
             // キャッチの完了→果実を置くところへ移動
-            joint_values[0] = -98.03;
-            joint_values[1] = -72.31;
-            joint_values[2] = -1.40;
-            joint_values[3] = 73.71;
-            joint_values[4] = -98.03;
+            joint_values = move_group.getCurrentJointValues();
+            joint_values[0] = to_radians(-98.03);
+            joint_values[1] = to_radians(-72.31);
+            joint_values[2] = to_radians(-1.40);
+            joint_values[3] = to_radians(73.71);
+            joint_values[4] = to_radians(-98.03);
             if (move_group.setJointValueTarget(joint_values)){
                 move_group.move();    
             }

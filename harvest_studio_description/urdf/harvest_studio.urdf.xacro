@@ -6,9 +6,9 @@
     <!--<xacro:include filename="$(find harvest_studio_description)/harvest_studio_endeffector.urdf.xacro"/>-->
 
     <joint name="arm_stand_joint" type="fixed">
-        <origin rpy="0 0 -1.57" xyz="0 0 0"/>
-        <parent link="stand_base"/>
-        <child link="world"/>
+        <origin rpy="0 0 1.57" xyz="0 0 0"/>
+        <parent link="world"/>
+        <child link="stand_base"/>
     </joint>
 
     <!--<joint name="arm_eef_joint" type="fixed">

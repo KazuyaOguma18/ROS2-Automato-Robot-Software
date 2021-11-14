@@ -27,7 +27,7 @@ def launch_setup(context, *args, **kwargs):
     add_vacuum_gripper = LaunchConfiguration('add_vacuum_gripper', default=False)
     dof = LaunchConfiguration('dof', default=7)
     ros2_control_plugin = LaunchConfiguration('ros2_control_plugin', default='xarm_control/XArmHW')
-    joint_states_remapping = LaunchConfiguration('joint_states_remapping', default='joint_states')
+    joint_states_remapping = LaunchConfiguration('joint_states_remapping', default='joint_states_remap')
     xacro_file = LaunchConfiguration('xacro_file', default=PathJoinSubstitution([FindPackageShare('harvest_studio_description'), 'harvest_studio.urdf.xacro']))
     
 

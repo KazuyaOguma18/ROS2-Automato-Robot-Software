@@ -17,7 +17,7 @@ namespace xarm_control
         info_ = info;
 
         node_ = rclcpp::Node::make_shared("fake_xarm_hw");
-        joint_state_pub_ = node_->create_publisher<sensor_msgs::msg::JointState>("joint_states", 1000);
+        joint_state_pub_ = node_->create_publisher<sensor_msgs::msg::JointState>("joint_states_remap", 1000);
         node_thread_ = std::thread([this]() {
             rclcpp::spin(node_);
         });
