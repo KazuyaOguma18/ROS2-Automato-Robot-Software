@@ -141,10 +141,10 @@
     <disable_collisions link1="${prefix}link1" link2="${prefix}link_base" reason="Adjacent" />
     <disable_collisions link1="${prefix}link2" link2="${prefix}link3" reason="Adjacent" />
     <disable_collisions link1="${prefix}link2" link2="${prefix}link4" reason="Never" />
-    <disable_collisions link1="${prefix}link2" link2="${prefix}link5" reason="Never" />
+    <!-- <disable_collisions link1="${prefix}link2" link2="${prefix}link5" reason="Never" /> -->
     <disable_collisions link1="${prefix}link2" link2="${prefix}link_base" reason="Never" />
     <disable_collisions link1="${prefix}link3" link2="${prefix}link4" reason="Adjacent" />
-    <disable_collisions link1="${prefix}link3" link2="${prefix}link5" reason="Never" />
+    <!-- <disable_collisions link1="${prefix}link3" link2="${prefix}link5" reason="Never" />-->
     <disable_collisions link1="${prefix}link4" link2="${prefix}link5" reason="Adjacent" />
     <disable_collisions link1="link_base" link2="stand_base" reason="Adjacent" />
     <disable_collisions link1="stand_base" link2="azure_camera_link" reason="Adjacent" />

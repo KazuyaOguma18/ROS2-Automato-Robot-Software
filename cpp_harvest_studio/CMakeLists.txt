@@ -59,6 +59,7 @@ custom_executable(dyna_angle_publisher)
 custom_executable(generate_motion_point)
 custom_executable(add_rviz_marker)
 custom_executable(get_xarm_state)
+custom_executable(generate_motion_point_random)
 
 
 # ament_export_dependencies(rosidl_default_runtime)
