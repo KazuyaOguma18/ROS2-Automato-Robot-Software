@@ -83,12 +83,12 @@ int main(int argc, char * argv[]){
     request->order = true;
 
 
-    move_group.setMaxVelocityScalingFactor(1.0);
-    move_group.setMaxAccelerationScalingFactor(1.0);
+    move_group.setMaxVelocityScalingFactor(0.5);
+    move_group.setMaxAccelerationScalingFactor(0.5);
     move_group.setPlanningTime(0.5);
     auto joint_values = move_group.getCurrentJointValues();
-    double GRIPPER_STATE1 = to_radians(-180);
-    double GRIPPER_STATE2 = to_radians(180);
+    double GRIPPER_STATE1 = to_radians(-360);
+    double GRIPPER_STATE2 = to_radians(360);
     geometry_msgs::msg::Pose target_pose;
     geometry_msgs::msg::PoseStamped target_pose_stamped;
     tf2::Quaternion q;
@@ -97,7 +97,7 @@ int main(int argc, char * argv[]){
 
     // 初期姿勢
     RCLCPP_INFO(rclcpp::get_logger("GMP"), "Pose Initialize");  
-    while (!move_group.setNamedTarget("hold-up")){
+    while (!move_group.setNamedTarget("home")){
         continue;
     }
     while (!move_group.move()){

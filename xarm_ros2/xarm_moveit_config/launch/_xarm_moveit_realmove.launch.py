@@ -133,6 +133,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{'source_list': ['{}/joint_states'.format(hw_ns.perform(context))]}],
         remappings=[
             ('follow_joint_trajectory', '{}{}_traj_controller/follow_joint_trajectory'.format(prefix.perform(context), xarm_type)),
+            ('joint_states', 'joint_states_remap'),
         ],
     )
 
