@@ -7,6 +7,7 @@
 ・tfについての理解
 """
 
+from math import radians
 import cv_bridge
 from cv_bridge.core import CvBridgeError
 import rclpy
@@ -26,6 +27,8 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
+
+from ament_index_python import get_package_share_directory
 
 
 import numpy as np
@@ -171,6 +174,7 @@ class TomatoDetector(Node):
         fruit_position_x = []
         fruit_position_y = []
         fruit_position_z = []
+        fruit_radius = []
 
         # 果実の位置検出
         x, y, z, radius = self.detect_fruits(mode)
@@ -207,16 +211,17 @@ class TomatoDetector(Node):
                 fruit_position_y.append(trans.transform.translation.y)
                 fruit_position_z.append(trans.transform.translation.z)
                 """
-                fruit_position_x.append(x[i])
-                fruit_position_y.append(y[i])
-                fruit_position_z.append(z[i])
+                fruit_position_x.append(x[i]*0.001)
+                fruit_position_y.append(y[i]*0.001)
+                fruit_position_z.append(z[i]*0.001)
+                fruit_radius.append(radius[i]*0.001)
 
             # 得られた位置情報をpublish
             pos_data = FruitDataList()
             pos_data.x = fruit_position_x
             pos_data.y = fruit_position_y
             pos_data.z = fruit_position_z
-            pos_data.radius = radius
+            pos_data.radius = fruit_radius
 
             self.publisher_.publish(pos_data)
             self.get_logger().info("Publish detect fruits")
@@ -341,8 +346,8 @@ class TomatoDetector(Node):
         for k in range(length):
             if names_show[k] == 'tomato':
                 if len(max_depth) > i:
-                    pixel_x ,pixel_y, pixel_x_left, pixel_x_right, pixel_y_up, pixel_y_low = focuspoint.calculate_FocusPoint(k ,boxes ,0.5, 0.5 ,1)
-                    X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x, pixel_y, pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], intrinsics)
+                    pixel_x_left, pixel_x_right, pixel_y_up, pixel_y_low  = focuspoint.calculate_FocusPoint(k ,boxes ,0.5, 0.5 ,1, 2)
+                    X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], intrinsics)
                     Position_X.append(float(X_meter))
                     Position_Y.append(float(Y_meter))
                     Position_Z.append(float(Z_meter))
@@ -355,6 +360,9 @@ class TomatoDetector(Node):
                     continue
             else:
                 continue
+                    
+        #cv2.putText(image_np, 'FPS : '+str(round(1/(t2-t1), 2)), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), thickness=2)
+        cv2.imshow('tomato', image_np)
         # cv2.imshow('tomato', image_np)
         # cv2.imshow('depth', depth_image)
         bridge = CvBridge()
@@ -420,14 +428,13 @@ def run(args=None):
         rclpy.shutdown()
 
 def main():
-    PACKAGE_NAME = '/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/py_harvest_studio/py_harvest_studio'
-    MODEL_NAME = PACKAGE_NAME + '/object_detection/tomato_graph'
+    PACKAGE_NAME = get_package_share_directory('py_harvest_studio')
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
-    PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
+    PATH_TO_CKPT = PACKAGE_NAME + '/frozen_inference_graph.pb'
 
     # List of the strings that is used to add correct label for each box.
-    PATH_TO_LABELS = os.path.join(PACKAGE_NAME + '/object_detection/training', 'object-detection.pbtxt')
+    PATH_TO_LABELS = os.path.join(PACKAGE_NAME , 'object-detection.pbtxt')
 
     NUM_CLASSES = 2
 
@@ -445,7 +452,7 @@ def main():
     category_index = label_map_util.create_category_index(categories)  
 
     net = Net()
-    param = torch.load(PACKAGE_NAME + '/object_detection/train_model/weight.pth')
+    param = torch.load(PACKAGE_NAME + '/weight.pth')
     net.load_state_dict(param)
 
 

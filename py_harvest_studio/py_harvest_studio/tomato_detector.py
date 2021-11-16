@@ -58,9 +58,9 @@ class TomatoDetector(Node):
         
         video_qos = qos.QoSProfile(depth=10)
         video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
-        rs_color_subscriber = message_filters.Subscriber(self, Image, '/rs/camera/color/image_raw', **{'qos_profile': video_qos})
-        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/rs/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
-        self.sub_rs_info = self.create_subscription(CameraInfo, '/rs/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
+        rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
+        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
+        self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
         self.rs_intrinsics = None
         self.publisher_ = self.create_publisher(FruitDataList, 'fruit_detect_list', 10)
         self.image_publisher = self.create_publisher(Image, '/fruit_detect_image', qos_profile_sensor_data)
@@ -479,7 +479,7 @@ def run(args=None):
         rclpy.shutdown()
 
 def main():
-    PACKAGE_NAME = '/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/py_harvest_studio/py_harvest_studio'
+    PACKAGE_NAME = '/home/ikedalab/ros2_ws/src/ROS2-Automato-Robot-Software/py_harvest_studio/py_harvest_studio'
     MODEL_NAME = PACKAGE_NAME + '/object_detection/tomato_graph'
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.

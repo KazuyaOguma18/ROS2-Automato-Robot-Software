@@ -1,5 +1,6 @@
 from setuptools import setup
-
+import os 
+from glob import glob
 
 package_name = 'py_harvest_studio'
 
@@ -11,6 +12,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name), glob('py_harvest_studio/object_detection/tomato_graph/frozen_inference_graph.pb')),
+        (os.path.join('share', package_name), glob('py_harvest_studio/object_detection/training/object-detection.pbtxt')),
+        (os.path.join('share', package_name), glob('py_harvest_studio/object_detection/train_model/weight.pth')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
