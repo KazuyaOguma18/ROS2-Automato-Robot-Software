@@ -193,6 +193,9 @@ def launch_setup(context, *args, **kwargs):
     hand_ros2serial_node = Node(
         package='py_harvest_studio',
         executable='hand_ros2serial',
+        parameters=[
+            {'hand_control_mode': 'demo'}
+        ],
     )
 
     sample_detector_node = Node(
@@ -211,8 +214,8 @@ def launch_setup(context, *args, **kwargs):
         # rs_camera_tf_node,
         generate_motion_point_node,
         fruit_data_processor_node,
-        # hand_ros2serial_node,
-        sample_detector_node,
+        hand_ros2serial_node,
+        # sample_detector_node,
     ]
 
     return nodes

@@ -1,0 +1,5 @@
+float32 hand
+float32 cup
+float32 pump
+---
+bool status

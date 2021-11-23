@@ -210,7 +210,7 @@ def launch_setup(context, *args, **kwargs):
         #tomato_detector_node,
         # rs_camera_tf_node,
         generate_motion_point_node,
-        # fruit_data_processor_node,
+        fruit_data_processor_node,
         # hand_ros2serial_node,
         # sample_detector_node,
     ]

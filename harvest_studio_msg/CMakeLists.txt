@@ -29,6 +29,7 @@ set(msg_files
 
 set(srv_files
   "srv/FruitPositionData.srv"
+  "srv/EndEffectorControl.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

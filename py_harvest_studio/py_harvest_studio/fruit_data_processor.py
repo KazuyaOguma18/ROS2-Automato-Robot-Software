@@ -37,6 +37,9 @@ class FruitDataProcessor(Node):
         self.radius = []
         self.detect_number = []
 
+        self.harvest_list = FruitDataList()
+
+
     # 検出された果実情報のコールバック
     # 重複果実のチェック、果実座標の平均取得、果実位置の線形変換＆平面距離取得＆ソート
     def fruit_detect_list_callback(self, msg):
@@ -60,16 +63,9 @@ class FruitDataProcessor(Node):
         self.harvest_z = self.z
         self.harvest_radius = self.radius
 
-        # 実際に収穫を行う果実の情報を出力
-        harvest_list = FruitDataList()
 
-        for i in range(len(self.x)):
-            harvest_list.x.append(self.harvest_x[i])
-            harvest_list.y.append(self.harvest_y[i])
-            harvest_list.z.append(self.harvest_z[i])
-            harvest_list.radius.append(self.harvest_radius[i])
 
-        self.harvest_list_publisher_.publish(harvest_list)
+        
         # self.get_logger().info("harvest_list_publish")
 
 
@@ -102,6 +98,8 @@ class FruitDataProcessor(Node):
             for j in range(i+1, len(self.x)):
                 if math.sqrt((self.x[i] - self.x[j])**2 + (self.y[i] - self.y[j])**2 + (self.z[i] - self.z[j])**2) < self.radius[i]:
                     self_duplicate_index.append(i)
+
+        # self.get_logger().info("self duplicate number :" + str(len(self_duplicate_index)))
         
         for i in self_duplicate_index:
             self.delete_fruit_data(i)
@@ -149,7 +147,7 @@ class FruitDataProcessor(Node):
         a = 1
         l = []
         for i in range(len(self.x)):
-            l.append([abs(c*self.z[i] - a*self.y[i])/math.sqrt(a^2+c^2), int(i)])
+            l.append([abs(c*self.z[i] - a*self.y[i])/math.sqrt(a**2+c**2), int(i)])
 
         l = sorted(l)
         sorted_x = list(range(len(self.x)))
@@ -173,35 +171,53 @@ class FruitDataProcessor(Node):
 
     # generate_motion_point から果実位置取得命令が出たときのコールバック
     def fruit_server_callback(self, request, responce):
+        try:
+            # 前回収穫した果実のデータを消去
+            # このタイミングに消去することで、収穫された果実が収穫用データに入ってしまう問題を解決
+            for i in range(len(self.x)):
+                if math.sqrt(pow(self.harvested_x - self.x[i], 2)+pow(self.harvested_y - self.y[i], 2)+pow(self.harvested_z - self.z[i], 2)) < self.harvested_radius:
+                    harvest_index = i
+                    break
+
+            self.delete_fruit_data(harvest_index)
+
+        except:
+            pass
+
         zero_data = False
-        if request.order == True and len(self.x) > 0:
-            i = 0
+        if request.order == True and len(self.harvest_x) > 0:
+            harvest_index = 0
 
             # 五回以上検出された信頼性のある果実から収穫
             for j in range(len(self.detect_number)):
                 if self.detect_number[j] > 5:
-                    i = j
+                    harvest_index = j
                     zero_data = True
+                    break
 
-            if len(self.x) >= i+1:
-                responce.x = self.harvest_x[i]
-                responce.y = self.harvest_y[i]
-                responce.z = self.harvest_z[i]
-                responce.radius = self.harvest_radius[i]
+            if len(self.harvest_x) >= harvest_index+1:
+                responce.x = self.harvest_x[harvest_index]
+                responce.y = self.harvest_y[harvest_index]
+                responce.z = self.harvest_z[harvest_index]
+                responce.radius = self.harvest_radius[harvest_index]
                 responce.success = True
 
                 harvest_target = FruitDataList()
-                harvest_target.x.append(self.harvest_x[i])
-                harvest_target.y.append(self.harvest_y[i])
-                harvest_target.z.append(self.harvest_z[i])
-                harvest_target.radius.append(self.harvest_radius[i])
+                harvest_target.x.append(self.harvest_x[harvest_index])
+                harvest_target.y.append(self.harvest_y[harvest_index])
+                harvest_target.z.append(self.harvest_z[harvest_index])
+                harvest_target.radius.append(self.harvest_radius[harvest_index])
 
                 self.harvest_target_publisher_.publish(harvest_target)
 
     
-                # 収穫データとして送信されたデータは削除
-                # 削除された直後に収穫完了する前に新たに検出されて、また配列に入りそうな予感
-                self.delete_fruit_data(i)
+                # 収穫データとして送信されたデータを保存
+                self.harvested_x = harvest_target.x[0]
+                self.harvested_y = harvest_target.y[0]
+                self.harvested_z = harvest_target.z[0]
+                self.harvested_radius = harvest_target.radius[0]
+                
+                self.get_logger().info("buffer x len :" + str(len(self.x)))
 
 
         elif request.order == False or zero_data == True:
@@ -245,6 +261,17 @@ class FruitDataProcessor(Node):
         else:
             status.data = False
             self.fruit_status_publisher_.publish(status)
+
+        self.harvest_list = FruitDataList()
+
+        # 実際に収穫を行う果実の情報を出力
+        for i in range(len(self.x)):
+            self.harvest_list.x.append(self.harvest_x[i])
+            self.harvest_list.y.append(self.harvest_y[i])
+            self.harvest_list.z.append(self.harvest_z[i])
+            self.harvest_list.radius.append(self.harvest_radius[i])
+
+        self.harvest_list_publisher_.publish(self.harvest_list)
 
 
 

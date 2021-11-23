@@ -66,9 +66,9 @@ void AddRvizMarker::harvest_list_callback(const harvest_studio_msg::msg::FruitDa
         marker.action = visualization_msgs::msg::Marker::ADD;
         marker.lifetime = rclcpp::Duration(1s);
 
-        marker.scale.x = harvest_list->radius[i];
-        marker.scale.y = harvest_list->radius[i];
-        marker.scale.z = harvest_list->radius[i];
+        marker.scale.x = harvest_list->radius[i]*1.01;
+        marker.scale.y = harvest_list->radius[i]*1.01;
+        marker.scale.z = harvest_list->radius[i]*1.01;
         marker.pose.position.x = harvest_list->x[i];
         marker.pose.position.y = harvest_list->y[i];
         marker.pose.position.z = harvest_list->z[i];
@@ -98,11 +98,11 @@ void AddRvizMarker::harvest_target_callback(const harvest_studio_msg::msg::Fruit
 
     marker.type = visualization_msgs::msg::Marker::SPHERE;
     marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.lifetime = rclcpp::Duration(1s);
+    marker.lifetime = rclcpp::Duration(5s);
 
-    marker.scale.x = harvest_target->radius[0];
-    marker.scale.y = harvest_target->radius[0];
-    marker.scale.z = harvest_target->radius[0];
+    marker.scale.x = harvest_target->radius[0]*1.02;
+    marker.scale.y = harvest_target->radius[0]*1.02;
+    marker.scale.z = harvest_target->radius[0]*1.02;
 
     marker.pose.position.x = harvest_target->x[0];
     marker.pose.position.y = harvest_target->y[0];
@@ -140,7 +140,7 @@ AddRvizMarker::AddRvizMarker(
     sub_harvest_target = this->create_subscription<harvest_studio_msg::msg::FruitDataList>(
         "harvest_target",
         rclcpp::QoS(10),
-        std::bind(&AddRvizMarker::harvest_list_callback, this, _1));
+        std::bind(&AddRvizMarker::harvest_target_callback, this, _1));
 
     pub_detect_list = this->create_publisher<visualization_msgs::msg::MarkerArray>("/marker_detect_list", rclcpp::QoS(10));
     pub_harvest_list = this->create_publisher<visualization_msgs::msg::MarkerArray>("/marker_harvest_list", rclcpp::QoS(10));

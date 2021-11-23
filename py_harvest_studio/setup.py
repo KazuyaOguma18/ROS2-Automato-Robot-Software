@@ -31,6 +31,7 @@ setup(
             'sample_depth_center = py_harvest_studio.sample_depth_center:main',
             'sample_tomato_data_publisher = py_harvest_studio.sample_tomato_data_publisher:main',
             'fruit_data_processor = py_harvest_studio.fruit_data_processor:main',
+            'hand_ros2serial = py_harvest_studio.hand_ros2serial:main',
         ],
     },
 )
