@@ -39,6 +39,12 @@ class FruitDataProcessor(Node):
 
         self.harvest_list = FruitDataList()
 
+        # 収穫を行う果実
+        self.harvest_x = []
+        self.harvest_y = []
+        self.harvest_z = []
+
+
 
     # 検出された果実情報のコールバック
     # 重複果実のチェック、果実座標の平均取得、果実位置の線形変換＆平面距離取得＆ソート
@@ -265,7 +271,7 @@ class FruitDataProcessor(Node):
         self.harvest_list = FruitDataList()
 
         # 実際に収穫を行う果実の情報を出力
-        for i in range(len(self.x)):
+        for i in range(len(self.harvest_x)):
             self.harvest_list.x.append(self.harvest_x[i])
             self.harvest_list.y.append(self.harvest_y[i])
             self.harvest_list.z.append(self.harvest_z[i])
