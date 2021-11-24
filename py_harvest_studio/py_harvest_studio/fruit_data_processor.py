@@ -12,6 +12,7 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import Bool
+from std_msgs.msg import Int16
 from harvest_studio_msg.msg import FruitDataList
 from harvest_studio_msg.srv import FruitPositionData
 
@@ -23,7 +24,7 @@ class FruitDataProcessor(Node):
     def __init__(self):
         super().__init__('fruit_data_processor')
         self.position_service_ = self.create_service(FruitPositionData, 'fruit_position_data', self.fruit_server_callback)
-        self.fruit_status_publisher_ = self.create_publisher(Bool, 'fruit_detect_status', 10)
+        self.fruit_status_publisher_ = self.create_publisher(Int16, 'fruit_detect_status', 10)
         self.harvest_list_publisher_ = self.create_publisher(FruitDataList, 'harvest_list', 10)
         self.harvest_target_publisher_ = self.create_publisher(FruitDataList, 'harvest_target', 10)
         self.list_subscriber_ = self.create_subscription(FruitDataList , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
@@ -259,14 +260,10 @@ class FruitDataProcessor(Node):
             del self.duplicate_index[j][0]
 
     def timer_callback(self):
-        status = Bool()
-        if len(self.x) > 0:
-            status.data = True
-            self.fruit_status_publisher_.publish(status)
-        
-        else:
-            status.data = False
-            self.fruit_status_publisher_.publish(status)
+        status = Int16()
+        status.data = len(self.x)
+
+        self.fruit_status_publisher_.publish(status)
 
         self.harvest_list = FruitDataList()
 

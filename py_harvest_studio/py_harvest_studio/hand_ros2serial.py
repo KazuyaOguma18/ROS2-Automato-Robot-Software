@@ -95,7 +95,7 @@ class HandRos2Serial(Node):
 
     def calc_tolerance(self):
         for i in range(2):
-            self.tolerance = (self.current_array[i] - self.goal_array[i])**2
+            self.tolerance = abs(self.current_array[i] - self.goal_array[i])
         
         return True if self.tolerance < 0.1 else False
 

@@ -41,7 +41,6 @@ DynaAnglePublisher::DynaAnglePublisher(
     timer_ = this->create_wall_timer(
         10ms,
         std::bind(&DynaAnglePublisher::timer_callback, this));
-
 }
 
 int main(int argc, char * argv[]){
