@@ -259,6 +259,8 @@ class FruitDataProcessor(Node):
             del self.duplicate_index[j][1]
             del self.duplicate_index[j][0]
 
+        self.get_logger().info("delete fruit data")
+
     def timer_callback(self):
         status = Int16()
         status.data = len(self.x)

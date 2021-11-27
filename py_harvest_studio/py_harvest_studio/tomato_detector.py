@@ -2,8 +2,6 @@
 """
 進捗状況
 ・花形の作成は完了
-・DLの定義はグローバル定義を行い、main関数内でwithを用いてsessionを読み込ませる
-・カラー画像とデプス画像を同期させる手法の検討が必要
 ・tfについての理解
 """
 
@@ -176,6 +174,7 @@ class TomatoDetector(Node):
         fruit_position_x = []
         fruit_position_y = []
         fruit_position_z = []
+        fruit_position_radius = []
 
         # 果実の位置検出
         x, y, z, radius = self.detect_fruits(mode)
@@ -215,13 +214,14 @@ class TomatoDetector(Node):
                 fruit_position_x.append(x[i]*0.001)
                 fruit_position_y.append(y[i]*0.001)
                 fruit_position_z.append(z[i]*0.001)
+                fruit_position_radius.append(radius[i]*0.001)
 
             # 得られた位置情報をpublish
             pos_data = FruitDataList()
             pos_data.x = fruit_position_x
             pos_data.y = fruit_position_y
             pos_data.z = fruit_position_z
-            pos_data.radius = radius
+            pos_data.radius = fruit_position_radius
 
             self.publisher_.publish(pos_data)
             self.get_logger().info("Publish detect fruits")

@@ -161,6 +161,18 @@ def launch_setup(context, *args, **kwargs):
         # },
     }
 
+    sensor_maneger_parameters = {
+        'sensors': ['azure'],
+        'azure.sensor_plugin': "occupancy_map_monitor/PointCloudOctomapUpdater",
+        'point_cloud_topic': '/azure/points2',
+        'max_range': 2.0,
+        'point_subsample': 1,
+        'padding_offset': 0.1,
+        'padding_scale': 1.5,
+        'filtered_cloud_topic': 'filtered_cloud',
+        'octomap_resolution': 0.025,
+    }
+
     # Start the actual move_group node/action server
     move_group_node = Node(
         package='moveit_ros_move_group',
@@ -173,6 +185,7 @@ def launch_setup(context, *args, **kwargs):
             plan_execution,
             moveit_controllers,
             planning_scene_monitor_parameters,
+            sensor_maneger_parameters,
         ],
     )
 

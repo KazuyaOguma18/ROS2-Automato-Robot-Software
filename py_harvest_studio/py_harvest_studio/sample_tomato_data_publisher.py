@@ -14,12 +14,12 @@ class SampleTomatoDataPublisher(Node):
     def timer_callback(self):
         data = FruitDataList()
         
-        x = [0.4, 0.5, 0.3]
+        x = [0.4]
         y = [0.5, 0.4, 0.5]
         z = [0.5, 0.3, 0.6]
         r = 0.06
 
-        for i in range(3):
+        for i in range(len(x)):
             data.x.append(x[i])
             data.y.append(y[i])
             data.z.append(z[i])
