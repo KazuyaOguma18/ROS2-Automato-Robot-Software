@@ -29,6 +29,8 @@ from tf2_ros.transform_listener import TransformListener
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 
+from ament_index_python import get_package_share_directory
+
 
 import numpy as np
 import os
@@ -54,12 +56,19 @@ class TomatoDetector(Node):
     def __init__(self):
         super().__init__('tomato_detector')
         
-        video_qos = qos.QoSProfile(depth=10)
-        video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
-        rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
-        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
-        self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
-        self.rs_intrinsics = None
+        # 動作モードの取得 : rs or azure
+        self.declare_parameter('camera_mode', 'rs')
+        camera_mode = self.get_parameter('camera_mode')
+        
+        if camera_mode == 'rs':
+            video_qos = qos.QoSProfile(depth=10)
+            video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
+            rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
+            rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
+            self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
+            self.rs_intrinsics = None
+            
+            
         self.publisher_ = self.create_publisher(FruitDataList, 'fruit_detect_list', 10)
         self.image_publisher = self.create_publisher(Image, '/fruit_detect_image', qos_profile_sensor_data)
         '''
@@ -479,14 +488,13 @@ def run(args=None):
         rclpy.shutdown()
 
 def main():
-    PACKAGE_NAME = '/home/ikedalab/ros2_ws/src/ROS2-Automato-Robot-Software/py_harvest_studio/py_harvest_studio'
-    MODEL_NAME = PACKAGE_NAME + '/object_detection/tomato_graph'
+    PACKAGE_NAME = get_package_share_directory('py_harvest_studio')
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
-    PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
+    PATH_TO_CKPT = PACKAGE_NAME + '/frozen_inference_graph.pb'
 
     # List of the strings that is used to add correct label for each box.
-    PATH_TO_LABELS = os.path.join(PACKAGE_NAME + '/object_detection/training', 'object-detection.pbtxt')
+    PATH_TO_LABELS = os.path.join(PACKAGE_NAME, 'object-detection.pbtxt')
 
     NUM_CLASSES = 2
 
@@ -504,7 +512,7 @@ def main():
     category_index = label_map_util.create_category_index(categories)  
 
     net = Net()
-    param = torch.load(PACKAGE_NAME + '/object_detection/train_model/weight.pth')
+    param = torch.load(PACKAGE_NAME + '/weight.pth')
     net.load_state_dict(param)
 
 
