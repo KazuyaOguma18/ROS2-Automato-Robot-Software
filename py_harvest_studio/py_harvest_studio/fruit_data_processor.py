@@ -101,10 +101,13 @@ class FruitDataProcessor(Node):
 
         # self.x内にデータにかぶりがないかどうか判定
         self_duplicate_index = []
-        for i in range(len(self.x)-1):
+        for i in range(len(self.x)):
+            duplicate = False
             for j in range(i+1, len(self.x)):
                 if math.sqrt((self.x[i] - self.x[j])**2 + (self.y[i] - self.y[j])**2 + (self.z[i] - self.z[j])**2) < self.radius[i]:
-                    self_duplicate_index.append(i)
+                    duplicate = True
+            if duplicate:
+                self_duplicate_index.append(i)
 
         # self.get_logger().info("self duplicate number :" + str(len(self_duplicate_index)))
         
@@ -115,14 +118,25 @@ class FruitDataProcessor(Node):
     def get_fruit_position_average(self):
         # 同じデータ番号を簡単に見つけるためにソート
         self.duplicate_index = sorted(self.duplicate_index)
-        # ダミーデータ（エラー防止用）
-        self.duplicate_index.append([0,0])
+
+        
         # 最初のデータにこれまでの検出分を足す
-        self.x[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.x[self.duplicate_index[0][0]] 
-        self.y[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.y[self.duplicate_index[0][0]] 
-        self.z[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.z[self.duplicate_index[0][0]] 
+        if len(self.duplicate_index) > 0:
+            self.x[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.x[self.duplicate_index[0][0]] 
+            self.y[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.y[self.duplicate_index[0][0]] 
+            self.z[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.z[self.duplicate_index[0][0]] 
+            self.radius[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.radius[self.duplicate_index[0][0]]
+            
+        
+        # ダミーデータ（エラー防止用）
+        self.duplicate_index.append([1000,0])
+                
+        # self.get_logger().info("self.detect_number[self.duplicate_index[0][0]] - 1: {}".format(self.detect_number[self.duplicate_index[0][0]] - 1))
+        # self.get_logger().info("self.duplicate_index[0][0]: {}".format((self.duplicate_index[0][0])))
+        # self.get_logger().info("self.x[self.duplicate_index[0][0]]: {}".format((self.x[self.duplicate_index[0][0]])))
 
         # ダミー以外の回数分繰り返す
+        # self.get_logger().info("len(self.duplicate_index) - 1: {}".format(len((self.duplicate_index))-1))
         for i in range(len(self.duplicate_index) - 1):
 
             if self.duplicate_index[i][0] != self.duplicate_index[i+1][0]:
@@ -130,12 +144,14 @@ class FruitDataProcessor(Node):
                 self.y[self.duplicate_index[i][0]] = self.y[self.duplicate_index[i][0]] / self.detect_number[self.duplicate_index[i][0]]
                 self.z[self.duplicate_index[i][0]] = self.z[self.duplicate_index[i][0]] / self.detect_number[self.duplicate_index[i][0]]
                 self.radius[self.duplicate_index[i][0]] = self.radius[self.duplicate_index[i][0]] / self.detect_number[self.duplicate_index[i][0]]
+                self.detect_number[self.duplicate_index[i][0]] += 1
 
-                if i < len(self.duplicate_index) - 1:
+                if i < len(self.duplicate_index) - 2:
                     self.x[self.duplicate_index[i+1][0]] += (self.detect_number[self.duplicate_index[i+1][0]] - 1)*self.x[self.duplicate_index[i+1][0]]
                     self.y[self.duplicate_index[i+1][0]] += (self.detect_number[self.duplicate_index[i+1][0]] - 1)*self.y[self.duplicate_index[i+1][0]]
                     self.z[self.duplicate_index[i+1][0]] += (self.detect_number[self.duplicate_index[i+1][0]] - 1)*self.z[self.duplicate_index[i+1][0]]
                     self.radius[self.duplicate_index[i+1][0]] += (self.detect_number[self.duplicate_index[i+1][0]] - 1)*self.radius[self.duplicate_index[i+1][0]]
+                    
 
             else:
                 self.x[self.duplicate_index[i][0]] += self.msg_x[self.duplicate_index[i][1]]
@@ -143,6 +159,10 @@ class FruitDataProcessor(Node):
                 self.z[self.duplicate_index[i][0]] += self.msg_z[self.duplicate_index[i][1]]
                 self.radius[self.duplicate_index[i][0]] += self.msg_radius[self.duplicate_index[i][1]]
                 self.detect_number[self.duplicate_index[i][0]] += 1
+                
+        del self.duplicate_index[-1]
+        # self.get_logger().info("self.x[self.duplicate_index[0][0]]: {}".format((self.x[self.duplicate_index[0][0]])))
+        
             
                 
 
@@ -259,7 +279,7 @@ class FruitDataProcessor(Node):
             del self.duplicate_index[j][1]
             del self.duplicate_index[j][0]
 
-        self.get_logger().info("delete fruit data")
+        # self.get_logger().info("delete fruit data")
 
     def timer_callback(self):
         status = Int16()
@@ -275,6 +295,7 @@ class FruitDataProcessor(Node):
             self.harvest_list.y.append(self.harvest_y[i])
             self.harvest_list.z.append(self.harvest_z[i])
             self.harvest_list.radius.append(self.harvest_radius[i])
+            # self.get_logger().info("detect_number[{}]: {}".format(i, self.detect_number[i]))
 
         self.harvest_list_publisher_.publish(self.harvest_list)
 
