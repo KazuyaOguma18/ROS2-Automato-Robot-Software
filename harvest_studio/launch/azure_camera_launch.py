@@ -41,7 +41,7 @@ def quaternion_from_euler(roll, pitch, yaw):
 
 def launch_setup(context, *args, **kwargs):
     azure_ns_launch_arg = DeclareLaunchArgument(
-        "azure_ns", default_value==TextSubstitution(text="azure")
+        "azure_ns", default_value=TextSubstitution(text="azure")
     )
     
     azure_launch_include = GroupAction(
@@ -62,11 +62,12 @@ def launch_setup(context, *args, **kwargs):
     azure_camera_tf_node = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments=['0', '0.04045', '0.072', str(q[1]), str(q[2]), str(q[3]), str(q[0]), 'azure_camera_link', 'camera_base', '100'],
+        arguments=['0', '0.04045', '0.072', '1.57', '0', '0', 'azure_camera_link', 'camera_base'],
         name='azure_camera_static_transform_publisher',
     )
     
     nodes = [
+        azure_ns_launch_arg,
         azure_launch_include,
         azure_camera_tf_node,
     ]

@@ -207,14 +207,14 @@ def launch_setup(context, *args, **kwargs):
         xarm_launch_include,
         #rs_ns_launch_arg,
         #rs_launch_include,
-        add_rviz_marker_node,
+        # add_rviz_marker_node,
         # camera2dynamixel_node,
         change_joint_states_node,
         #tomato_detector_node,
         # rs_camera_tf_node,
-        generate_motion_point_node,
-        fruit_data_processor_node,
-        hand_ros2serial_node,
+        # generate_motion_point_node,
+        # fruit_data_processor_node,
+        # hand_ros2serial_node,
         # sample_detector_node,
     ]
 
