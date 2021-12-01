@@ -6,7 +6,7 @@
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16MultiArray
 from sensor_msgs.msg import JointState
 
 import RPi.GPIO as GPIO
@@ -17,6 +17,7 @@ class HarvestStudioRasp(Node):
         super().__init__('harvest_studio_rasp')
         self.fruit_status_subscriber = self.create_subscription(Int16, 'fruit_detect_status', self.fruit_status_callback)
         self.jointstate_publisher = self.create_publisher(JointState, 'arm_joint_state', 10)
+        self.mode_publisher = self.create_publisher(Int16MultiArray, 'studio_mode', 10)
         self.timer_ = self.create_timer(0.1, self.timer_callback)
         self.mode = 0
         self.data_array = [0,0,0]
@@ -57,7 +58,7 @@ class HarvestStudioRasp(Node):
         line_s = line.split(",")
         
         try:
-            if len(line_s) > 2:
+            if len(line_s) > 3:
                 self.data_array = [float(s) for s in line_s]
                 
                 # 角度情報をpublish
@@ -71,7 +72,12 @@ class HarvestStudioRasp(Node):
                 self.jointstate_publisher.publish(jointstate)
                 
                 # 現在のモード情報を取得
-                self.mode = int(s[2])
+                self.studio_mode = int(s[2])
+                self.rotate_mode = int(s[3])
+                mode = Int16MultiArray()
+                mode.data.append(self.studio_mode)
+                mode.data.append(self.rotate_mode)
+                self.mode_publisher(mode)
                 
         except:
             pass

@@ -275,7 +275,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  int mode = 2;
+  int mode = 0;
   int pot_rotate_mode = 0;
   int waiting = 0;
   uint8_t usr_buf[1000];
@@ -303,6 +303,9 @@ int main(void)
 	  else{
 		  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, 1);
 	  }
+
+	  /* communication */
+	  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, pot_rotate_mode);
 
 	  HAL_UART_Transmit(&huart2, usr_buf, strlen(usr_buf), 100);
 	  switch(mode){
@@ -332,20 +335,18 @@ int main(void)
 		  /*アームを動作,スイッチの接触判定が起こるまで*/
 
 		  /* right arm control */
-		  /*
 		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
 			  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 200);
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 50);
 		  }
 		  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
 		  }
-		  */
 
 		  /* left arm control */
 		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
 			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 200);
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 50);
 		  }
 		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);

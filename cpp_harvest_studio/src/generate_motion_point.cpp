@@ -9,6 +9,7 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 
 #include <std_msgs/msg/float32_multi_array.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include "harvest_studio_msg/srv/fruit_position_data.hpp"
 #include "harvest_studio_msg/srv/end_effector_control.hpp"
 #include <geometry_msgs/msg/pose.hpp>
@@ -38,8 +39,7 @@ void create_eef_motion(float hand_data[], float radius, float pump){
     hand_data[2] = pump;
 }
 
-double to_radians(const double deg_angle)
-{
+double to_radians(const double deg_angle){
   return deg_angle * M_PI / 180.0;
 }
 
@@ -127,8 +127,15 @@ int main(int argc, char * argv[]){
 
     auto hand_request = std::make_shared<harvest_studio_msg::srv::EndEffectorControl::Request>();
 
+    /*
     rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_eef =
         service_node->create_publisher<std_msgs::msg::Float32MultiArray>("/hand_goal", rclcpp::QoS(10));
+    */
+
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr fruit_target_command_pub =
+        service_node->create_publisher<std_msgs::msg::Empty>("fruit_target_send_command", rclcpp::QoS(10));
+    
+    std_msgs::msg::Empty fruit_target_command;
 
     move_group.setMaxVelocityScalingFactor(0.5);
     move_group.setMaxAccelerationScalingFactor(0.5);
@@ -160,6 +167,7 @@ int main(int argc, char * argv[]){
     while (rclcpp::ok()){
 
         // 果実位置情報の呼び出し
+        fruit_target_command_pub->publish(fruit_target_command);
         while (!arm_client->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
               RCLCPP_ERROR(rclcpp::get_logger("GMP"), "Interrupted while waiting for the service. Exiting.");

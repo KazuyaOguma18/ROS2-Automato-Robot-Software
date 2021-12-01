@@ -13,6 +13,7 @@ from rclpy.node import Node
 
 from std_msgs.msg import Bool
 from std_msgs.msg import Int16
+from std_msgs.msg import Int16MultiArray
 from harvest_studio_msg.msg import FruitDataList
 from harvest_studio_msg.srv import FruitPositionData
 
@@ -28,6 +29,7 @@ class FruitDataProcessor(Node):
         self.harvest_list_publisher_ = self.create_publisher(FruitDataList, 'harvest_list', 10)
         self.harvest_target_publisher_ = self.create_publisher(FruitDataList, 'harvest_target', 10)
         self.list_subscriber_ = self.create_subscription(FruitDataList , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
+        self.studio_mode_subscriber_ = self.create_subscription(Int16MultiArray, 'studio_mode', self.studio_mode_callback, 10)
 
         self.timer = self.create_timer(0.5, self.timer_callback)
 
@@ -44,6 +46,9 @@ class FruitDataProcessor(Node):
         self.harvest_x = []
         self.harvest_y = []
         self.harvest_z = []
+        
+        # 以前のポット回転モード
+        self.previous_rotate_mode = 0
 
 
 
@@ -298,6 +303,26 @@ class FruitDataProcessor(Node):
             # self.get_logger().info("detect_number[{}]: {}".format(i, self.detect_number[i]))
 
         self.harvest_list_publisher_.publish(self.harvest_list)
+    
+    # ポットの回転モードが変化したら配列を初期化   
+    def studio_mode_callback(self, msg):
+        if self.previous_rotate_mode != msg.data[1]:
+            # 果実情報を配列に代入
+            self.x = []
+            self.y = []
+            self.z = []
+            self.radius = []
+            self.detect_number = []
+
+            self.harvest_list = FruitDataList()
+
+            # 収穫を行う果実
+            self.harvest_x = []
+            self.harvest_y = []
+            self.harvest_z = []
+            
+        else:
+            pass
 
 
 
