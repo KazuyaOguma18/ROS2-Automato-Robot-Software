@@ -40,9 +40,9 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define P_GAIN 10
-#define I_GAIN 0.1
-#define D_GAIN 0.001
+#define P_GAIN 0.5
+#define I_GAIN 0.05
+#define D_GAIN 0.01
 #define DELTA_T 0.01
 
 #define AS5600_RESOLUTION_PPR   4096
@@ -124,23 +124,23 @@ int pot_rotate_control(uint16_t count){
 	}
 
 	if (count < need_count/4){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, (uint16_t)4*(300-50)/need_count*count);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)4*(300-50)/need_count*count);
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 0;
 	}
 	else if(count >= need_count/4 && count < need_count*3/4){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 300);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 300);
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 0;
 	}
 	else if(count >= need_count*3/4 && count < need_count){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, (uint16_t)(-1200)/need_count*count + 1200);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(-1200)/need_count*count + 1200);
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 0;
 	}
 	else{
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		first=1;
 		return 1;
 	}
@@ -150,18 +150,20 @@ void dual_arm_control(float target_angle){
 	static float sensor_angle;
 	static int pid_value;
 
-	/* right arm control */
+	/* left arm control */
+	/*
 	sensor_angle = read_arm_encoder_value(1);
 	pid_value = motor_pid(1, sensor_angle, target_angle, 0);
 	if (pid_value > 0){
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 	}
 	else{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 	}
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, abs(pid_value));
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, abs(pid_value));
+	*/
 
-	/* left arm control */
+	/* right arm control */
 	sensor_angle = read_arm_encoder_value(2);
 	pid_value = motor_pid(2, sensor_angle, target_angle, 0);
 	if (pid_value > 0){
@@ -186,11 +188,11 @@ int motor_pid(int n, float sensor_angle, float target_angle, int reset){
 	p = P_GAIN * diff[n][1];
 	i = I_GAIN * integral[n];
 	d = D_GAIN * (diff[n][1] - diff[n][0]) / DELTA_T;
-	if (p+i+d > 300){
-		return 300;
+	if (p+i+d > 200.0){
+		return 200.0;
 	}
-	else if (p+i+d < -300){
-		return -300;
+	else if (p+i+d < -200.0){
+		return -200.0;
 	}
 	else{
 		return (int)p+i+d;
@@ -198,9 +200,9 @@ int motor_pid(int n, float sensor_angle, float target_angle, int reset){
 }
 
 float read_arm_encoder_value(int n){
-	static uint16_t RawAngle;
-	static double DegAngle;
-	static uint8_t Encoder_Buff[2];
+	uint16_t RawAngle;
+	double DegAngle;
+	uint8_t Encoder_Buff[2];
 	if (n==1){
 		HAL_I2C_Mem_Read(&hi2c1, AS5600_DEV_ADDRESS, AS5600_REG_RAW_ANGLE,
 					I2C_MEMADD_SIZE_8BIT, (uint8_t*)Encoder_Buff, 2, 5000);
@@ -211,8 +213,8 @@ float read_arm_encoder_value(int n){
 	}
 	RawAngle = (uint16_t) Encoder_Buff[0] << 8 | (uint16_t) Encoder_Buff[1];
 	RawAngle &= 0x0FFF;
-	DegAngle = RawAngle * 180 / AS5600_RESOLUTION_PPR - 180.0;
-	return DegAngle;
+	DegAngle = RawAngle * 360 / AS5600_RESOLUTION_PPR - 180.0;
+	return DegAngle*0.6;
 }
 
 int16_t read_rotary_encoder_value(void){
@@ -273,7 +275,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  int mode = 0;
+  int mode = 2;
   int pot_rotate_mode = 0;
   int waiting = 0;
   uint8_t usr_buf[1000];
@@ -294,6 +296,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  /* debug */
+	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
+		  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, 0);
+	  }
+	  else{
+		  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, 1);
+	  }
+
+	  HAL_UART_Transmit(&huart2, usr_buf, strlen(usr_buf), 100);
 	  switch(mode){
 	  case 0:
 		  /*アーム角を0度に設定*/
@@ -309,8 +320,8 @@ int main(void)
 	  case 1:
 		  /*アーム角を0度に設定*/
 		  dual_arm_control(0.0);
-		  /*測距センサの閾値を下回るまで待機*/
-		  if (distance_read() > 500){
+		  /*測距センサの閾値を上回るまで待機*/
+		  if (distance_read() > 3000){
 			  mode = 2;
 		  }
 		  /*閾値超え->mode=2*/
@@ -321,20 +332,22 @@ int main(void)
 		  /*アームを動作,スイッチの接触判定が起こるまで*/
 
 		  /* right arm control */
-		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0){
+		  /*
+		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
 			  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 200);
 		  }
-		  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
+		  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
 		  }
+		  */
 
 		  /* left arm control */
-		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
+		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
 			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 200);
 		  }
-		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
+		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
 		  }
 
@@ -380,9 +393,8 @@ int main(void)
 		  }
 		  break;
 	  }
-	  HAL_Delay(DELTA_T * 1000);
-	  sprintf(usr_buf, "Encoder: %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2));
-	  HAL_UART_Transmit(&huart2, usr_buf, strlen(usr_buf), 100);
+	  HAL_Delay(DELTA_T * 100);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
