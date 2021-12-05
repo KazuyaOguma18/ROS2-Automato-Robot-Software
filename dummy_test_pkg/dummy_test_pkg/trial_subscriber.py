@@ -11,13 +11,19 @@ from rclpy.qos import qos_profile_sensor_data
 import cv2
 import message_filters
 
+from rclpy.qos import qos_profile_sensor_data
+
 
 class TrialSubscriber(Node):
 
     def __init__(self):
         super().__init__('trial_subscriber')
-        color_subscription = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': qos_profile_sensor_data})
-        depth_subscription = message_filters.Subscriber(self, Image, '/camera/depth/image_rect_raw', **{'qos_profile': qos_profile_sensor_data})
+        video_qos = qos.QoSProfile(depth=10)
+        video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
+        color_subscription = message_filters.Subscriber(self, Image, '/azure/rgb/image_raw', **{'qos_profile': video_qos})
+        depth_subscription = message_filters.Subscriber(self, Image, '/azure/depth_to_rgb/image_raw', **{'qos_profile': video_qos})
+        
+        
         '''
         self.subscription = self.create_subscription(
             Image,
@@ -33,7 +39,7 @@ class TrialSubscriber(Node):
         ts = message_filters.ApproximateTimeSynchronizer([color_subscription, depth_subscription], queue_size, delay)
         ts.registerCallback(self.listener_callback)
         self.br = CvBridge()
-        self.get_logger().info('Subscribed')
+        # self.get_logger().info('Subscribed')
 
     def listener_callback(self, msg1, msg2):
         try:

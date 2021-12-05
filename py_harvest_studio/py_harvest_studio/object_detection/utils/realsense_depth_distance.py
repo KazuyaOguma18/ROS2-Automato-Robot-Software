@@ -14,7 +14,7 @@ def get_depth_at_pixel(depth_frame, pixel_x, pixel_y):
     return depth_frame.as_depth_frame().get_distance(round(pixel_x), round(pixel_y))
 
 
-def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_depth, intrinsics):
+def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_depth, mode):
     
     '''
    if intrinsics:
@@ -30,11 +30,17 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_dept
     '''
 
 
-    
-    theta_x_1 = math.atan(x_1*math.tan(math.radians(69.4/2)))
-    theta_x_2 = math.atan(x_2*math.tan(math.radians(69.4/2)))
-    theta_y_1 = math.atan(y_1*math.tan(math.radians(42.5/2)))
-    theta_y_2 = math.atan(y_2*math.tan(math.radians(42.5/2)))
+    if mode == "rs":
+        theta_x_1 = math.atan(x_1*math.tan(math.radians(69.4/2)))
+        theta_x_2 = math.atan(x_2*math.tan(math.radians(69.4/2)))
+        theta_y_1 = math.atan(y_1*math.tan(math.radians(42.5/2)))
+        theta_y_2 = math.atan(y_2*math.tan(math.radians(42.5/2)))
+    elif mode == "azure":
+        theta_x_1 = math.atan(x_1*math.tan(math.radians(90/2)))
+        theta_x_2 = math.atan(x_2*math.tan(math.radians(90/2)))
+        theta_y_1 = math.atan(y_1*math.tan(math.radians(74.3/2)))
+        theta_y_2 = math.atan(y_2*math.tan(math.radians(74.3/2)))
+                
     X_1 = int(depth* math.tan(theta_x_1) )
     X_2 = int(depth* math.tan(theta_x_2) )
     Y_1 = int(depth* math.tan(theta_y_1) )

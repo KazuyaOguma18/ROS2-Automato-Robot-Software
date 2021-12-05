@@ -165,7 +165,7 @@ def launch_setup(context, *args, **kwargs):
         'sensors': ['azure'],
         'octomap_resolution': 0.025,
         'azure.sensor_plugin': 'occupancy_map_monitor/PointCloudOctomapUpdater',
-        'azure.point_cloud_topic': '/azure/points2',
+        'azure.point_cloud_topic': '/update_points2',
         'azure.max_range': 2.0,
         'azure.point_subsample': 1,
         'azure.padding_offset': 0.1,
@@ -173,6 +173,9 @@ def launch_setup(context, *args, **kwargs):
         'azure.max_update_rate': 1.0,
         'azure.filtered_cloud_topic': 'filtered_cloud',
     }
+    
+
+
 
     # Start the actual move_group node/action server
     move_group_node = Node(

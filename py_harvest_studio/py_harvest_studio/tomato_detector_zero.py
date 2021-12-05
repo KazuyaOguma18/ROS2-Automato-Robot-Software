@@ -57,8 +57,8 @@ class TomatoDetector(Node):
         
         video_qos = qos.QoSProfile(depth=10)
         video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
-        rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
-        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
+        rs_color_subscriber = message_filters.Subscriber(self, Image, '/azure/rgb/image_raw', **{'qos_profile': video_qos})
+        rs_depth_subscriber = message_filters.Subscriber(self, Image, '/azure/depth_to_rgb/image_raw', **{'qos_profile': video_qos})
         self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
         self.rs_intrinsics = None
         self.publisher_ = self.create_publisher(FruitDataList, 'fruit_detect_list', 10)

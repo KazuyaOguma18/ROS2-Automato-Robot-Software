@@ -57,46 +57,53 @@ class TomatoDetector(Node):
         super().__init__('tomato_detector')
         
         # 動作モードの取得 : rs or azure
-        self.declare_parameter('camera_mode', 'rs')
+        self.declare_parameter('camera_mode', 'azure')
         camera_mode = self.get_parameter('camera_mode')
+        # depth画像とcolor画像の同期
+        queue_size = 10
+        fps = 30.
+        delay = 1/fps*0.5    
         
-        if camera_mode == 'rs':
+        
+            
+        if str(camera_mode.value) == 'rs':
             video_qos = qos.QoSProfile(depth=10)
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
             rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
             rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
             self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
             self.rs_intrinsics = None
+            rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
+            rs_ts.registerCallback(self.rs_image_callback)         
+            #realsenseの解像度指定
+            self.width_color = 1280
+            self.height_color = 720
+            self.width_depth = 1280
+            self.height_depth = 720 
+            self.get_logger().info("camera_mode: "+str(camera_mode.value))       
+                   
+        elif str(camera_mode.value) == 'azure':
+            video_qos = qos.QoSProfile(depth=10)
+            video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
+            azure_color_subscriber = message_filters.Subscriber(self, Image, '/azure/rgb/image_raw', **{'qos_profile': video_qos})
+            azure_depth_subscriber = message_filters.Subscriber(self, Image, '/azure/depth_to_rgb/image_raw', **{'qos_profile': video_qos})
+            azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
+            azure_ts.registerCallback(self.azure_image_callback)
+            #azure kinectの解像度指定
+            self.width_color = 2048
+            self.height_color = 1536
+            self.width_depth = 2048
+            self.height_depth = 1536         
             
+            self.get_logger().info("camera_mode: "+str(camera_mode.value))
+               
             
-        self.publisher_ = self.create_publisher(FruitDataList, 'fruit_detect_list', 10)
-        self.image_publisher = self.create_publisher(Image, '/fruit_detect_image', qos_profile_sensor_data)
-        '''
-        azure_color_subscriber = message_filters.Subscriber(self, Image, '/azure/camera/color/image_raw', **{'qos_profile': qos_profile_sensor_data})
-        azure_depth_subscriber = message_filters.Subscriber(self, Image, '/azure/camera/depth/image_raw', **{'qos_profile': qos_profile_sensor_data})
-        '''
-        
-        '''
-        self.rs_image_subscriber = self.create_subscription(Image, '/camera/color/image_raw', self.rs_image_callback, 1)
-        self.rs_depth_subscriber = self.create_subscription(Image, 'rs/depth/image_rect_raw', self.rs_depth_callback, 1)
-        self.azure_image_subscriber = self.create_subscription(Image, 'rs/camera/image_raw', self.azure_image_callback, 1)
-        self.azure_depth_subscriber = self.create_subscription(Image, 'rs/camera/image_raw', self.azure_depth_callback, 1)
-        '''
-        # timer_period = 0.01
-        # self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.publisher_ = self.create_publisher(FruitDataList, '/fruit_detect_list', 10)
+        pub_video_qos = qos.QoSProfile(depth=10)
+        pub_video_qos = qos.QoSReliabilityPolicy.BEST_EFFORT
+        self.image_publisher = self.create_publisher(Image, '/fruit_detect_image', **{'qos_profile': pub_video_qos})
 
-        # depth画像とcolor画像の同期
-        queue_size = 10
-        fps = 30.
-        delay = 1/fps*0.5
-        
-        # rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
-        rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
-        rs_ts.registerCallback(self.rs_image_callback)
-        '''
-        azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
-        azure_ts.registerCallback(self.azure_image_callback)
-        '''
+
         # TFの定義
         """
         self.tf_rs_buffer = Buffer()
@@ -109,17 +116,15 @@ class TomatoDetector(Node):
 
         self.br = TransformBroadcaster(self)
         """
-        #realsenseの解像度指定
-        self.width_color = 1280
-        self.height_color = 720
-        self.width_depth = 1280
-        self.height_depth = 720
+
 
         # 画像用の変数定義
         # self.rs_color_image = np.zeros(720, 1280)
         # self.rs_depth_image = np.zeros(720, 1280)
         # self.azure_color_image = np.zeros(720, 1280)
         # self.azure_depth_image = np.zeros(720, 1280)
+        
+        self.get_logger().info("camera_mode: "+str(camera_mode.value))
 
     def rs_depth_info_callback(self, cameraInfo):
         try:
@@ -167,9 +172,11 @@ class TomatoDetector(Node):
         
 
     def azure_image_callback(self, color_msg, depth_msg):
-        self.azure_color_image = self.process_image(self.height_color, self.width_color, color_msg, "bgr8")
-        self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, "mono16")       
+        color_tmp = self.process_image(self.height_color, self.width_color, color_msg, "bgra8")
+        self.azure_color_image = cv2.cvtColor(color_tmp, cv2.COLOR_BGRA2BGR)
+        self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, "16UC1")       
         self.color_image_callback(mode="azure", child_frame="", camera_frame="", buffer="")
+        
 
     def azure_depth_callback(self, msg):
         self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, msg)
@@ -409,7 +416,7 @@ class TomatoDetector(Node):
                 if names_show[k] == 'tomato':
                     if len(max_depth) > i:
                         pixel_x_left, pixel_x_right, pixel_y_up, pixel_y_low = focuspoint.calculate_FocusPoint(k ,boxes ,X_c, Y_c ,scale, 2)
-                        X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], intrinsics)
+                        X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], mode)
                         Position_X.append(float(X_meter))
                         Position_Y.append(float(Y_meter))
                         Position_Z.append(float(Z_meter))

@@ -63,6 +63,7 @@ void ChangeJointStates::jointstate_callback(const sensor_msgs::msg::JointState::
             }
         }
     }
+
     pub_joint_state->publish(rejoint_state);
 }
 
@@ -147,8 +148,7 @@ ChangeJointStates::ChangeJointStates(
     joint_name[6] = "right_arm_joint";
     joint_name[7] = "left_arm_joint";
 
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++){
         rejoint_state.name.push_back(joint_name[i]);
         rejoint_state.position.push_back(0.0);
         rejoint_state.velocity.push_back(0.0);
