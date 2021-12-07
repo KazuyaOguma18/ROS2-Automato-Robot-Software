@@ -19,7 +19,7 @@ void AddRvizMarker::detect_list_callback(const harvest_studio_msg::msg::FruitDat
     visualization_msgs::msg::Marker marker;
 
     for (long unsigned int i = 0; i < data_len; i++){
-        marker.header.frame_id = "link_base";
+        marker.header.frame_id = "stand_base";
         marker.header.stamp = rclcpp::Clock().now();
         marker.ns = "detect_list";
         marker.id = i;
@@ -56,7 +56,7 @@ void AddRvizMarker::harvest_list_callback(const harvest_studio_msg::msg::FruitDa
     // RCLCPP_INFO(rclcpp::get_logger("maker"), "data len: %d", data_len);  
 
     for (long unsigned int i = 0; i < data_len; i++){
-        marker.header.frame_id = "link_base";
+        marker.header.frame_id = "stand_base";
         marker.header.stamp = rclcpp::Clock().now();
 
         marker.ns = "harvest_list";
@@ -90,7 +90,7 @@ void AddRvizMarker::harvest_list_callback(const harvest_studio_msg::msg::FruitDa
 
 void AddRvizMarker::harvest_target_callback(const harvest_studio_msg::msg::FruitDataList::SharedPtr harvest_target){
     visualization_msgs::msg::Marker marker;
-    marker.header.frame_id = "link_base";
+    marker.header.frame_id = "stand_base";
     marker.header.stamp = rclcpp::Clock().now();
 
     marker.ns = "harvest_target";

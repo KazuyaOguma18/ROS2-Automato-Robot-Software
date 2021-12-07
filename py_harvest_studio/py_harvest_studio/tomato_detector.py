@@ -90,10 +90,10 @@ class TomatoDetector(Node):
             azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
             azure_ts.registerCallback(self.azure_image_callback)
             #azure kinectの解像度指定
-            self.width_color = 2048
-            self.height_color = 1536
-            self.width_depth = 2048
-            self.height_depth = 1536         
+            self.width_color = 960
+            self.height_color = 1080
+            self.width_depth = 960
+            self.height_depth = 1080         
             
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
                
@@ -172,11 +172,11 @@ class TomatoDetector(Node):
         
 
     def azure_image_callback(self, color_msg, depth_msg):
-        color_tmp = self.process_image(self.height_color, self.width_color, color_msg, "bgra8")
-        self.azure_color_image = cv2.cvtColor(color_tmp, cv2.COLOR_BGRA2BGR)
-        self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, "16UC1")       
+        color_tmp  = self.process_image(1080, 1920, color_msg, "bgr8")
+        self.azure_color_image = color_tmp[0:1080, 480:1440]
+        depth_tmp = self.process_image(1080, 1920, depth_msg, "16UC1")
+        self.azure_depth_image = depth_tmp[0:1080, 480:1440]
         self.color_image_callback(mode="azure", child_frame="", camera_frame="", buffer="")
-        
 
     def azure_depth_callback(self, msg):
         self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, msg)
@@ -431,6 +431,7 @@ class TomatoDetector(Node):
                 else:
                     continue
 
+            cv2.namedWindow("tomato", cv2.WINDOW_NORMAL)
             cv2.putText(image_np, 'FPS : '+str(round(1/(t2-t1), 2)), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), thickness=2)
             cv2.imshow('tomato', image_np)
             # cv2.imshow('depth', depth_image)
