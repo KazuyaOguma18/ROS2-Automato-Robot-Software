@@ -54,7 +54,7 @@ def launch_setup(context, *args, **kwargs):
                         'launch/driver.launch.py'
                     )
                 )
-            ),            
+            ),
         ]
     )
     
@@ -62,14 +62,74 @@ def launch_setup(context, *args, **kwargs):
     azure_camera_tf_node = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments=['0', '0.04045', '0.072', '1.57', '0', '0', 'azure_camera_link', 'camera_base'],
+        arguments=['0', '0.0618', '0.0405', '1.57', '0', '0', 'azure_camera_link', 'camera_base'],
         name='azure_camera_static_transform_publisher',
     )
-    
+
+    rs_camera_tf_node = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=['0.16291', '-0.25084', '0.03286', '0', '-0.436332', '-0.785398', 'stand_base', 'camera_link'],
+        name='rs_camera_static_transform_publisher',
+    )
+
+    rs_ns_launch_arg = DeclareLaunchArgument(
+        "rs_ns", default_value=TextSubstitution(text="rs")
+    )
+
+    # realsenseのモデルの出力（azure kinectとの衝突により動作せず)
+    rs_model_launch_arg = DeclareLaunchArgument(
+        "model", default_value=TextSubstitution(text="d415")
+    )
+
+    rs_robot_desctiption_include = GroupAction(
+        actions=[
+            PushRosNamespace(LaunchConfiguration('rs_ns')),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(   
+                    os.path.join(
+                        get_package_share_directory('realsense2_description'),
+                        'launch/view_model.launch.py'
+                    )
+                )
+            ),
+        ]
+    )
+
+    # 圧縮画像の解凍用ノード
+    rs_color_unzip_node = Node(
+        namespace='rs_color',
+        package='image_transport',
+        executable='republish',
+        arguments=['compressed', 'raw'],
+        remappings=[
+            ("in/compressed", '/camera/color/image_raw/compressed'),
+            ("out", 'image_com'),
+        ]
+    )
+
+
+    rs_depth_unzip_node = Node(
+        namespace='rs_depth',
+        package='image_transport',
+        executable='republish',
+        arguments=['compressed', 'raw'],
+        remappings=[
+            ('in/compressed', '/camera/aligned_depth_to_color/image_raw/compressed'),
+            ('out', 'image_com'),
+        ]
+    )
+
     nodes = [
         azure_ns_launch_arg,
         azure_launch_include,
         azure_camera_tf_node,
+        rs_camera_tf_node,
+        # rs_ns_launch_arg,
+        # rs_model_launch_arg,
+        # rs_robot_desctiption_include,
+        # rs_depth_unzip_node,
+        rs_color_unzip_node,
     ]
 
     return nodes

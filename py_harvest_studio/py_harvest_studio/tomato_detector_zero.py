@@ -60,19 +60,19 @@ class TomatoDetector(Node):
         camera_mode = self.get_parameter('camera_mode')
         # depth画像とcolor画像の同期
         queue_size = 10
-        fps = 30.
-        delay = 1/fps*0.5    
+        fps = 5.
+        delay = 1/fps
         
         
             
         if str(camera_mode.value) == 'rs':
             video_qos = qos.QoSProfile(depth=10)
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
-            rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
+            rs_color_subscriber = message_filters.Subscriber(self, Image, '/rs_color/image_com', **{'qos_profile': video_qos})
             rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
             self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
             self.rs_intrinsics = None
-            rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
+            rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, 1.0)
             rs_ts.registerCallback(self.rs_image_callback)         
             #realsenseの解像度指定
             self.width_color = 1280
@@ -169,7 +169,7 @@ class TomatoDetector(Node):
         self.rs_depth_image = depth_image.astype(np.uint8)
         # cv2.imshow("n_depth", self.rs_depth_image)
         # self.get_logger().info(str(max(self.rs_depth_image)))
-        self.color_image_callback(mode="rs" ,child_frame="", camera_frame="", buffer="")
+        self.color_image_callback(mode="rs" ,child_frame="rs_tomato", camera_frame="camera_link")
         
 
     def azure_image_callback(self, color_msg, depth_msg):
@@ -379,10 +379,9 @@ class TomatoDetector(Node):
                 continue
 
         t2 = time.time()
-        """
         cv2.namedWindow("tomato", cv2.WINDOW_NORMAL)
         cv2.putText(image_np, 'FPS : '+str(round(1/(t2-t1), 2)), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), thickness=2)
-        cv2.imshow('tomato', image_np)"""
+        cv2.imshow('tomato', image_np)
         # cv2.imshow('tomato', image_np)
         # cv2.imshow('depth', depth_image)
         bridge = CvBridge()
@@ -459,6 +458,14 @@ def main():
     NUM_CLASSES = 2
 
     global detection_graph, label_map, categories, category_index, net, sess
+    physical_devices = tf.config.list_physical_devices('GPU')
+    if len(physical_devices) > 0:
+        for device in physical_devices:
+            tf.config.experimental.set_memory_growth(device, True)
+            print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
+    else:
+        print("Not enough GPU hardware devices available")
+    
     detection_graph = tf.Graph()
     with detection_graph.as_default():
       od_graph_def = tf.compat.v1.GraphDef()

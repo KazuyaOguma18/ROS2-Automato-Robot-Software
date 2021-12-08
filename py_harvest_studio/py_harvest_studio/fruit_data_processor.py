@@ -126,7 +126,7 @@ class FruitDataProcessor(Node):
 
         
         # 最初のデータにこれまでの検出分を足す
-        if len(self.duplicate_index) > 0:
+        if len(self.duplicate_index) > 0 and len(self.x) > 0:
             self.x[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.x[self.duplicate_index[0][0]] 
             self.y[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.y[self.duplicate_index[0][0]] 
             self.z[self.duplicate_index[0][0]] += (self.detect_number[self.duplicate_index[0][0]] - 1)*self.z[self.duplicate_index[0][0]] 
