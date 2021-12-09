@@ -128,7 +128,7 @@ def launch_setup(context, *args, **kwargs):
         # rs_ns_launch_arg,
         # rs_model_launch_arg,
         # rs_robot_desctiption_include,
-        # rs_depth_unzip_node,
+        rs_depth_unzip_node,
         rs_color_unzip_node,
     ]
 

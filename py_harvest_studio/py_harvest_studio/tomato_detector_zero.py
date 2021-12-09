@@ -60,7 +60,7 @@ class TomatoDetector(Node):
         camera_mode = self.get_parameter('camera_mode')
         # depth画像とcolor画像の同期
         queue_size = 10
-        fps = 5.
+        fps = 1.
         delay = 1/fps
         
         
@@ -72,14 +72,20 @@ class TomatoDetector(Node):
             rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
             self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
             self.rs_intrinsics = None
-            rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, 1.0)
-            rs_ts.registerCallback(self.rs_image_callback)         
+            rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
+            rs_ts.registerCallback(self.rs_image_callback)
             #realsenseの解像度指定
             self.width_color = 1280
             self.height_color = 720
             self.width_depth = 1280
             self.height_depth = 720 
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
+
+            # realsenseのtf定義
+            self.br = TransformBroadcaster(self)
+            self.tf_buffer = Buffer()
+            self.tf_listener = TransformListener(self.tf_buffer, self)
+            self.camera_frame = "camera_link"
 
         elif str(camera_mode.value) == 'azure':
             video_qos = qos.QoSProfile(depth=10)
@@ -107,7 +113,7 @@ class TomatoDetector(Node):
         self.publisher_ = self.create_publisher(FruitDataList, '/fruit_detect_list', 10)
         pub_video_qos = qos.QoSProfile(depth=10)
         pub_video_qos = qos.QoSReliabilityPolicy.BEST_EFFORT
-        self.image_publisher = self.create_publisher(Image, '/fruit_detect_image', **{'qos_profile': pub_video_qos})
+        self.image_publisher = self.create_publisher(Image, str(camera_mode.value) + '_fruit_detect_image', **{'qos_profile': pub_video_qos})
         # TFの定義
         """
         self.tf_rs_buffer = Buffer()
@@ -154,19 +160,29 @@ class TomatoDetector(Node):
         try:
             bridge = CvBridge()
             img = bridge.imgmsg_to_cv2(image, encode)
+
+
+        except Exception as err:
+            print("image convert failed! :{}".format(err))
+            return
+
+        try:
             # print(type(img))
             h, w = img.shape[:2]
             resize_img = cv2.resize(img, dsize=(width, height), interpolation=cv2.INTER_NEAREST)
             return resize_img
+
         except Exception as err:
-            pass
+            print("image resize failed! :{}".format(err))
+            return
 
     # 各画像トピックのcallback#
     #  tfにより位置関係を取得し座標変換
     def rs_image_callback(self, color_msg, depth_msg):
         self.rs_color_image = self.process_image(self.height_color, self.width_color, color_msg, "bgr8")
-        depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, depth_msg.encoding)
-        self.rs_depth_image = depth_image.astype(np.uint8)
+        self.rs_depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, "16UC1")
+        # print(depth_msg.encoding)
+        # self.rs_depth_image = depth_image.astype(np.uint8)
         # cv2.imshow("n_depth", self.rs_depth_image)
         # self.get_logger().info(str(max(self.rs_depth_image)))
         self.color_image_callback(mode="rs" ,child_frame="rs_tomato", camera_frame="camera_link")
