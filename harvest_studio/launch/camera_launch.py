@@ -69,7 +69,7 @@ def launch_setup(context, *args, **kwargs):
     rs_camera_tf_node = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments=['0.16291', '-0.25084', '0.03286', '0', '-0.436332', '-0.785398', 'stand_base', 'camera_link'],
+        arguments=['0.16291', '-0.25084', '0.03286', '-2.00713', '-0.785398', '0' ,'stand_base', 'camera_link'],
         name='rs_camera_static_transform_publisher',
     )
 

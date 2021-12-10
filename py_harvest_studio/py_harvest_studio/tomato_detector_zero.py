@@ -63,7 +63,9 @@ class TomatoDetector(Node):
         fps = 1.
         delay = 1/fps
         
-        
+        self.br = TransformBroadcaster(self)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
             
         if str(camera_mode.value) == 'rs':
             video_qos = qos.QoSProfile(depth=10)
@@ -75,16 +77,13 @@ class TomatoDetector(Node):
             rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
             rs_ts.registerCallback(self.rs_image_callback)
             #realsenseの解像度指定
-            self.width_color = 1280
-            self.height_color = 720
-            self.width_depth = 1280
-            self.height_depth = 720 
+            self.width_color = 640
+            self.height_color = 480
+            self.width_depth = 640
+            self.height_depth = 480
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
 
             # realsenseのtf定義
-            self.br = TransformBroadcaster(self)
-            self.tf_buffer = Buffer()
-            self.tf_listener = TransformListener(self.tf_buffer, self)
             self.camera_frame = "camera_link"
 
         elif str(camera_mode.value) == 'azure':
@@ -101,9 +100,6 @@ class TomatoDetector(Node):
             self.height_depth = 1080
 
             # azureのtf定義
-            self.br = TransformBroadcaster(self)
-            self.tf_buffer = Buffer()
-            self.tf_listener = TransformListener(self.tf_buffer, self)
             self.camera_frame = "camera_base"
 
             
@@ -395,9 +391,9 @@ class TomatoDetector(Node):
                 continue
 
         t2 = time.time()
-        cv2.namedWindow("tomato", cv2.WINDOW_NORMAL)
+        # cv2.namedWindow("tomato", cv2.WINDOW_NORMAL)
         cv2.putText(image_np, 'FPS : '+str(round(1/(t2-t1), 2)), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), thickness=2)
-        cv2.imshow('tomato', image_np)
+        # cv2.imshow('tomato', image_np)
         # cv2.imshow('tomato', image_np)
         # cv2.imshow('depth', depth_image)
         bridge = CvBridge()

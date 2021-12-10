@@ -67,7 +67,7 @@ class HandRos2Serial(Node):
 
         return response
 
-    # 周期性の制御    
+    # 周期性の制御
     def timer_callback(self):
         print("reading...")
         line = self.ser.readline().strip()
@@ -85,19 +85,19 @@ class HandRos2Serial(Node):
             print("--------------------")
             self.ser.write("No data\n")
             self.i = self.i+1
-            self.j = 0   
+            self.j = 0
 
         # 誤差が0.1以内に収まったらハンドに送信するゴール状態を更新
-        if self.calc_tolerance() == True:
+        if self.calc_tolerance(0.1) == True:
             self.ser.write(str(self.goal_array[0]) + "," + str(self.goal_array[1]) + "," + str(self.goal_array[2])) 
 
 
 
-    def calc_tolerance(self):
+    def calc_tolerance(self, tolerance):
         for i in range(2):
             self.tolerance = abs(self.current_array[i] - self.goal_array[i])
         
-        return True if self.tolerance < 0.1 else False
+        return True if self.tolerance < tolerance else False
 
 def main(args=None):
     try:

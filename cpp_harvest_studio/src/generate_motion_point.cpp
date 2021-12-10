@@ -6,7 +6,9 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/qos.hpp>
+
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include <std_msgs/msg/float32_multi_array.hpp>
 #include <std_msgs/msg/empty.hpp>
@@ -15,6 +17,8 @@
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <moveit_msgs/msg/attached_collision_object.hpp>
+#include <moveit_msgs/msg/collision_object.hpp>
 
 
 #include <chrono>
@@ -24,9 +28,7 @@
 
 using namespace std::chrono_literals;
 
-using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
-
-float x, y, z, radius;
+double x, y, z, radius;
 bool success=false;
 
 bool hand_status = false;
@@ -97,6 +99,41 @@ void hand_service(rclcpp::Client<harvest_studio_msg::srv::EndEffectorControl>::S
 
 }
 
+// トマトのモデルをオブジェクトとしてrviz上に反映
+moveit_msgs::msg::CollisionObject addTomato_object(std::string planning_frame,
+               moveit::planning_interface::PlanningSceneInterface planning_scene_interface,
+               double x, double y, double z, double radius){
+    
+    moveit_msgs::msg::CollisionObject collision_object;
+    collision_object.header.frame_id = planning_frame;
+
+    // The id of the object is used to identify it.
+    collision_object.id = "tomato";
+
+    // Define tomato(sphere) to add to the world
+    shape_msgs::msg::SolidPrimitive primitive;
+    primitive.type = primitive.SPHERE;
+    primitive.dimensions.resize(1);
+    primitive.dimensions[0] = radius;
+
+    // Define the pose for a tomato(sphere)
+    geometry_msgs::msg::Pose tomato_pose;
+    tomato_pose.position.x = x;
+    tomato_pose.position.y = y;
+    tomato_pose.position.z = z;
+    tomato_pose.orientation.x = 0.0;
+    tomato_pose.orientation.y = 0.0;
+    tomato_pose.orientation.z = 0.0;
+    tomato_pose.orientation.w = 1.0;
+
+    collision_object.primitives.push_back(primitive);
+    collision_object.primitive_poses.push_back(tomato_pose);
+    collision_object.operation = collision_object.ADD;
+
+    // Now, let's add the collision object into the world
+    return collision_object;
+}
+
 
 int main(int argc, char * argv[]){
     rclcpp::init(argc, argv);
@@ -111,8 +148,12 @@ int main(int argc, char * argv[]){
     std::thread([&executor]() {executor.spin(); }).detach();
 
     RCLCPP_INFO(rclcpp::get_logger("GMP"), "initialize MoveGroupInterface");
-    MoveGroupInterface move_group(move_node,"xarm5");
+    // Move group interface for the robot
+    moveit::planning_interface::MoveGroupInterface move_group(move_node, "xarm5");
     RCLCPP_INFO(rclcpp::get_logger("GMP"), "complete MoveGroupInterface");
+
+    // Planning scene interface
+    moveit::planning_interface::PlanningSceneInterface plannig_scene_interface;
     
     // アーム位置制御用サービス
     rclcpp::Client<harvest_studio_msg::srv::FruitPositionData>::SharedPtr arm_client = 
@@ -132,10 +173,15 @@ int main(int argc, char * argv[]){
         service_node->create_publisher<std_msgs::msg::Float32MultiArray>("/hand_goal", rclcpp::QoS(10));
     */
 
+    // Octomap更新用Publisher
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr fruit_target_command_pub =
         service_node->create_publisher<std_msgs::msg::Empty>("fruit_target_send_command", rclcpp::QoS(10));
     
     std_msgs::msg::Empty fruit_target_command;
+
+    // planninr scene Publisher
+    rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr planning_scene_pub =
+        service_node->create_publisher<moveit_msgs::msg::PlanningScene>("planning_scene", rclcpp::QoS(10));
 
     move_group.setMaxVelocityScalingFactor(0.5);
     move_group.setMaxAccelerationScalingFactor(0.5);
@@ -149,25 +195,27 @@ int main(int argc, char * argv[]){
 
     std_msgs::msg::Float32MultiArray eef_data;
 
-    // 初期姿勢
-    RCLCPP_INFO(rclcpp::get_logger("GMP"), "Pose Initialize");  
+    // -----------------------initial pose--------------------------
+    RCLCPP_INFO(rclcpp::get_logger("GMP"), "Pose Initialize");
     while (!move_group.setNamedTarget("hold-up")){
         continue;
     }
     while (!move_group.move()){
         continue;
     }
-    
+    // -----------------------initial pose--------------------------
 
-    
     double yaw;
     float hand_data[] = {0.0, 0.0, 0.0};
+    moveit_msgs::msg::CollisionObject collision_object;
+    std::vector<std::string> objects;
+    objects.push_back("tomato");
 
 
     while (rclcpp::ok()){
 
         // 果実位置情報の呼び出し
-        fruit_target_command_pub->publish(fruit_target_command);
+        
         while (!arm_client->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
               RCLCPP_ERROR(rclcpp::get_logger("GMP"), "Interrupted while waiting for the service. Exiting.");
@@ -177,7 +225,16 @@ int main(int argc, char * argv[]){
         }
 
         auto result = arm_client->async_send_request(arm_request, std::bind(&arm_callback_response, std::placeholders::_1));
+
+        // トマトオブジェクトの追加
+        RCLCPP_INFO(rclcpp::get_logger("GMP"), "adding tomato object");
+        plannig_scene_interface.applyCollisionObject(addTomato_object(move_group.getPlanningFrame(), plannig_scene_interface, x, y, z, radius));
+        // planning_scene_pub->publish(plannig_scene_interface);
+
+
         rclcpp::sleep_for(100ms);
+        fruit_target_command_pub->publish(fruit_target_command);
+        rclcpp::sleep_for(500ms);
         // Wait for the result.
 
         // RCLCPP_INFO(rclcpp::get_logger("GMP"), "C");
@@ -189,7 +246,7 @@ int main(int argc, char * argv[]){
         }
         
         else{
-                    // アームの動作生成
+            // アームの動作生成
             RCLCPP_INFO(rclcpp::get_logger("GMP"), "Generating robot arm motion");
             // 果実位置まで移動
             target_pose.position.x = x;
@@ -207,7 +264,7 @@ int main(int argc, char * argv[]){
             if (move_group.setPoseTarget(target_pose)){
                 while (!move_group.move()){
                     move_group.clearPoseTarget();
-                    move_group.setPoseTarget(target_pose);            
+                    move_group.setPoseTarget(target_pose);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "x: %f", target_pose.position.x);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "y: %f", target_pose.position.y);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "z: %f", target_pose.position.z);
@@ -227,6 +284,8 @@ int main(int argc, char * argv[]){
                 create_eef_motion(hand_data, radius, 1.0);
                 hand_service(hand_client, hand_request, hand_data);
 
+                // オブジェクトの把持
+                move_group.attachObject("tomato");
 
                 // エフェクタ軸回転
                 joint_values = move_group.getCurrentJointValues();
@@ -249,7 +308,7 @@ int main(int argc, char * argv[]){
                 joint_values[3] = to_radians(73.71);
                 joint_values[4] = to_radians(-98.03);
                 if (move_group.setJointValueTarget(joint_values)){
-                    move_group.move();    
+                    move_group.move();
                 }
 
                 //　ハンドの把持を解除
@@ -258,13 +317,16 @@ int main(int argc, char * argv[]){
                 hand_data[2] = 0.0;
                 hand_service(hand_client, hand_request, hand_data);
 
+                // オブジェクトの把持を解除
+                move_group.detachObject("tomato");
+
+
             }
 
             else{
                 RCLCPP_ERROR(rclcpp::get_logger("generate motion point"), "Failed to create arm motion");
             }
         }
-
 
     }
     

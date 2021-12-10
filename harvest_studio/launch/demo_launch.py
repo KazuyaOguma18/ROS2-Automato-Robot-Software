@@ -203,6 +203,11 @@ def launch_setup(context, *args, **kwargs):
         executable='sample_tomato_data_publisher',
     )
 
+    point_cloud_updater_node = Node(
+        package='cpp_harvest_studio',
+        executable='point_cloud_updater',        
+    )
+
     nodes = [
         xarm_launch_include,
         #rs_ns_launch_arg,
@@ -212,10 +217,11 @@ def launch_setup(context, *args, **kwargs):
         change_joint_states_node,
         #tomato_detector_node,
         # rs_camera_tf_node,
-        # generate_motion_point_node,
+        generate_motion_point_node,
         # fruit_data_processor_node,
-        # hand_ros2serial_node,
+        hand_ros2serial_node,
         # sample_detector_node,
+        point_cloud_updater_node,
     ]
 
     return nodes
