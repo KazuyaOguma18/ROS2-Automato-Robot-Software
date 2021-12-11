@@ -1,9 +1,3 @@
-/*
-進捗状況
-・一部関数除くほとんどのコーディング完了
-・動作確認まだ
-*/
-
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/qos.hpp>
 
@@ -101,8 +95,7 @@ void hand_service(rclcpp::Client<harvest_studio_msg::srv::EndEffectorControl>::S
 
 // トマトのモデルをオブジェクトとしてrviz上に反映
 moveit_msgs::msg::CollisionObject addTomato_object(std::string planning_frame,
-               moveit::planning_interface::PlanningSceneInterface planning_scene_interface,
-               double x, double y, double z, double radius){
+                                                    double x, double y, double z, double radius){
     
     moveit_msgs::msg::CollisionObject collision_object;
     collision_object.header.frame_id = planning_frame;
@@ -114,7 +107,7 @@ moveit_msgs::msg::CollisionObject addTomato_object(std::string planning_frame,
     shape_msgs::msg::SolidPrimitive primitive;
     primitive.type = primitive.SPHERE;
     primitive.dimensions.resize(1);
-    primitive.dimensions[0] = radius;
+    primitive.dimensions[0] = radius/4;
 
     // Define the pose for a tomato(sphere)
     geometry_msgs::msg::Pose tomato_pose;
@@ -179,9 +172,6 @@ int main(int argc, char * argv[]){
     
     std_msgs::msg::Empty fruit_target_command;
 
-    // planninr scene Publisher
-    rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr planning_scene_pub =
-        service_node->create_publisher<moveit_msgs::msg::PlanningScene>("planning_scene", rclcpp::QoS(10));
 
     move_group.setMaxVelocityScalingFactor(0.5);
     move_group.setMaxAccelerationScalingFactor(0.5);
@@ -228,11 +218,14 @@ int main(int argc, char * argv[]){
 
         // トマトオブジェクトの追加
         RCLCPP_INFO(rclcpp::get_logger("GMP"), "adding tomato object");
-        plannig_scene_interface.applyCollisionObject(addTomato_object(move_group.getPlanningFrame(), plannig_scene_interface, x, y, z, radius));
+        //plannig_scene_interface.applyCollisionObject(addTomato_object(move_group.getPlanningFrame(), x, y, z, radius));
+        rclcpp::sleep_for(500ms);
+        plannig_scene_interface.applyCollisionObject(addTomato_object(move_group.getPlanningFrame(), x, y, z, radius));
+
         // planning_scene_pub->publish(plannig_scene_interface);
 
 
-        rclcpp::sleep_for(100ms);
+        rclcpp::sleep_for(500ms);
         fruit_target_command_pub->publish(fruit_target_command);
         rclcpp::sleep_for(500ms);
         // Wait for the result.
@@ -302,13 +295,15 @@ int main(int argc, char * argv[]){
 
                 // キャッチの完了→果実を置くところへ移動
                 joint_values = move_group.getCurrentJointValues();
-                joint_values[0] = to_radians(-98.03);
-                joint_values[1] = to_radians(-72.31);
-                joint_values[2] = to_radians(-1.40);
-                joint_values[3] = to_radians(73.71);
-                joint_values[4] = to_radians(-98.03);
+                joint_values[0] = to_radians(-38.54);
+                joint_values[1] = to_radians(-43.16);
+                joint_values[2] = to_radians(-22.65);
+                joint_values[3] = to_radians(65.80);
+                joint_values[4] = to_radians(-38.53);
                 if (move_group.setJointValueTarget(joint_values)){
-                    move_group.move();
+                    while(!move_group.move()){
+                        continue;
+                    }
                 }
 
                 //　ハンドの把持を解除

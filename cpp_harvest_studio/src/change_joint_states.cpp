@@ -27,6 +27,16 @@ void ChangeJointStates::jointstate_callback(const sensor_msgs::msg::JointState::
         }
     }
 
+    /*
+    static int count = 0;
+    if (count < 1000){
+        rejoint_state.position[3] = -1.5708;
+        count++;
+    }
+    */
+    
+    
+
     rejoint_state.header.stamp = rclcpp::Clock().now();      
     for (long unsigned int i=0; i<jointstates->position.size(); i++){
         if(jointstates->name[i] == "azure_camera_joint"){

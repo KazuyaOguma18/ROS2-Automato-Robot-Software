@@ -37,6 +37,9 @@ namespace xarm_control
         position_cmds_.resize(info_.joints.size(), 0);
         velocity_cmds_.resize(info_.joints.size(), 0);
 
+        position_states_[3] = -1.5708;
+        position_cmds_[3] = -1.5708;
+
         for (const hardware_interface::ComponentInfo & joint : info_.joints) {
             bool has_pos_cmd_interface = false;
             for (auto i = 0u; i < joint.command_interfaces.size(); ++i) {

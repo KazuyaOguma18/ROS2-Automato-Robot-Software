@@ -41,23 +41,6 @@ def quaternion_from_euler(roll, pitch, yaw):
     return q
 
 def launch_setup(context, *args, **kwargs):
-    rs_ns_launch_arg = DeclareLaunchArgument(
-        "rs_ns", default_value=TextSubstitution(text="rs")
-    )
-
-    rs_launch_include = GroupAction(
-        actions=[
-            PushRosNamespace(LaunchConfiguration('rs_ns')),
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    os.path.join(
-                        get_package_share_directory('realsense2_camera'),
-                        'launch/rs_launch.py'
-                    )
-                )
-            ),            
-        ]
-    )
 
     xarm_launch_include = GroupAction(
         actions=[
@@ -210,9 +193,7 @@ def launch_setup(context, *args, **kwargs):
 
     nodes = [
         xarm_launch_include,
-        #rs_ns_launch_arg,
-        #rs_launch_include,
-        add_rviz_marker_node,
+        # add_rviz_marker_node,
         # camera2dynamixel_node,
         change_joint_states_node,
         #tomato_detector_node,
