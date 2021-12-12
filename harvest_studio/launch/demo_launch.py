@@ -193,7 +193,7 @@ def launch_setup(context, *args, **kwargs):
 
     nodes = [
         xarm_launch_include,
-        # add_rviz_marker_node,
+        add_rviz_marker_node,
         # camera2dynamixel_node,
         change_joint_states_node,
         #tomato_detector_node,

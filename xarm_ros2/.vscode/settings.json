@@ -1,0 +1,16 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/ogumak/ros2_ws/install/xarm_msgs/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/build/py_harvest_studio",
+        "/home/ogumak/ros2_ws/install/py_harvest_studio/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/harvest_studio_msg/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/build/harvest_studio_description",
+        "/home/ogumak/ros2_ws/install/harvest_studio_description/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/build/harvest_studio",
+        "/home/ogumak/ros2_ws/install/harvest_studio/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.8/site-packages",
+        "/home/ogumak/ros2_ws/build/dummy_test_pkg",
+        "/home/ogumak/ros2_ws/install/dummy_test_pkg/lib/python3.8/site-packages",
+        "/opt/ros/foxy/lib/python3.8/site-packages"
+    ]
+}

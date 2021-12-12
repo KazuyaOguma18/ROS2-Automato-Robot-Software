@@ -26,9 +26,9 @@ void AddRvizMarker::detect_list_callback(const harvest_studio_msg::msg::FruitDat
         marker.type = visualization_msgs::msg::Marker::SPHERE;
         marker.action = visualization_msgs::msg::Marker::ADD;
         marker.lifetime = rclcpp::Duration(1s);
-        marker.scale.x = detect_list->radius[i];
-        marker.scale.y = detect_list->radius[i];
-        marker.scale.z = detect_list->radius[i];
+        marker.scale.x = detect_list->radius[i]*0.7;
+        marker.scale.y = detect_list->radius[i]*0.7;
+        marker.scale.z = detect_list->radius[i]*0.7;
         marker.pose.position.x = detect_list->x[i];
         marker.pose.position.y = detect_list->y[i];
         marker.pose.position.z = detect_list->z[i];
@@ -66,9 +66,9 @@ void AddRvizMarker::harvest_list_callback(const harvest_studio_msg::msg::FruitDa
         marker.action = visualization_msgs::msg::Marker::ADD;
         marker.lifetime = rclcpp::Duration(1s);
 
-        marker.scale.x = harvest_list->radius[i]*1.01;
-        marker.scale.y = harvest_list->radius[i]*1.01;
-        marker.scale.z = harvest_list->radius[i]*1.01;
+        marker.scale.x = harvest_list->radius[i]*0.8;
+        marker.scale.y = harvest_list->radius[i]*0.8;
+        marker.scale.z = harvest_list->radius[i]*0.8;
         marker.pose.position.x = harvest_list->x[i];
         marker.pose.position.y = harvest_list->y[i];
         marker.pose.position.z = harvest_list->z[i];
@@ -100,9 +100,9 @@ void AddRvizMarker::harvest_target_callback(const harvest_studio_msg::msg::Fruit
     marker.action = visualization_msgs::msg::Marker::ADD;
     marker.lifetime = rclcpp::Duration(5s);
 
-    marker.scale.x = harvest_target->radius[0]*1.02;
-    marker.scale.y = harvest_target->radius[0]*1.02;
-    marker.scale.z = harvest_target->radius[0]*1.02;
+    marker.scale.x = harvest_target->radius[0]*0.9;
+    marker.scale.y = harvest_target->radius[0]*0.9;
+    marker.scale.z = harvest_target->radius[0]*0.9;
 
     marker.pose.position.x = harvest_target->x[0];
     marker.pose.position.y = harvest_target->y[0];

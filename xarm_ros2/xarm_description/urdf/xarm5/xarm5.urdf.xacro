@@ -328,7 +328,7 @@
       name="${prefix}joint5"
       type="revolute">
       <origin
-        xyz="0.076 0.3395 0"
+        xyz="0.076 0.3595 0"
         rpy="-1.5708 0 0" />
       <parent
         link="${prefix}link4" />
