@@ -20,7 +20,11 @@
 #include <memory>
 #include <cmath>
 
+#define TRY_MOTION_GENERATE_COUNT 10
+
 using namespace std::chrono_literals;
+
+
 
 double x, y, z, radius;
 bool success=false;
@@ -197,12 +201,15 @@ int main(int argc, char * argv[]){
 
     double yaw;
     float hand_data[] = {0.0, 0.0, 0.0};
+    int try_count = 0;
     moveit_msgs::msg::CollisionObject collision_object;
     std::vector<std::string> objects;
     objects.push_back("tomato");
 
 
     while (rclcpp::ok()){
+
+        try_count = 0;
 
         // 果実位置情報の呼び出し
         
@@ -255,14 +262,21 @@ int main(int argc, char * argv[]){
 
             move_group.clearPoseTarget();
             if (move_group.setPoseTarget(target_pose)){
-                while (!move_group.move()){
+                while (!move_group.move() && try_count < TRY_MOTION_GENERATE_COUNT){
                     move_group.clearPoseTarget();
                     move_group.setPoseTarget(target_pose);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "x: %f", target_pose.position.x);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "y: %f", target_pose.position.y);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "z: %f", target_pose.position.z);
                     // RCLCPP_INFO(rclcpp::get_logger("GMP"), "w: %f", target_pose.orientation.w);
+                    try_count++;
                     continue;
+                }
+
+                // 10回以上動作生成失敗したら新しい果実のデータを取りに行く
+                if(try_count >= TRY_MOTION_GENERATE_COUNT){
+                    continue;
+
                 }
 
 

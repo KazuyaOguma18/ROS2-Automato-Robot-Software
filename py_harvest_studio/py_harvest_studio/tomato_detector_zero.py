@@ -228,7 +228,7 @@ class TomatoDetector(Node):
                 # アームと果実の座標の位置関係を取得
                 now = rclpy.time.Time()
                 trans = self.tf_buffer.lookup_transform(
-                    "stand_base",
+                    "link_base",
                     child_frame,
                     now)
                 fruit_position_x.append(trans.transform.translation.x)
