@@ -1,11 +1,3 @@
-
-"""
-進捗状況
-・花形の作成は完了
-・tfについての理解
-"""
-
-
 import imp
 from re import T
 from numpy.lib.function_base import append
@@ -64,23 +56,28 @@ class TomatoDetector(Node):
         fps = 30.
         delay = 1/fps*0.5    
         
-        
+        self.br = TransformBroadcaster(self)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)        
             
         if str(camera_mode.value) == 'rs':
             video_qos = qos.QoSProfile(depth=10)
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
-            rs_color_subscriber = message_filters.Subscriber(self, Image, '/camera/color/image_raw', **{'qos_profile': video_qos})
+            rs_color_subscriber = message_filters.Subscriber(self, Image, '/rs_color/image_com', **{'qos_profile': video_qos})
             rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
             self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
             self.rs_intrinsics = None
             rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
             rs_ts.registerCallback(self.rs_image_callback)         
             #realsenseの解像度指定
-            self.width_color = 1280
-            self.height_color = 720
-            self.width_depth = 1280
-            self.height_depth = 720 
-            self.get_logger().info("camera_mode: "+str(camera_mode.value))       
+            self.width_color = 640
+            self.height_color = 480
+            self.width_depth = 640
+            self.height_depth = 480 
+            self.get_logger().info("camera_mode: "+str(camera_mode.value))   
+            
+            # realsenseのtf定義
+            self.camera_frame = "camera_link"    
                    
         elif str(camera_mode.value) == 'azure':
             video_qos = qos.QoSProfile(depth=10)
@@ -93,7 +90,10 @@ class TomatoDetector(Node):
             self.width_color = 960
             self.height_color = 1080
             self.width_depth = 960
-            self.height_depth = 1080         
+            self.height_depth = 1080 
+            
+            # azureのtf定義
+            self.camera_frame = "camera_base"        
             
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
                
@@ -101,7 +101,7 @@ class TomatoDetector(Node):
         self.publisher_ = self.create_publisher(FruitDataList, '/fruit_detect_list', 10)
         pub_video_qos = qos.QoSProfile(depth=10)
         pub_video_qos = qos.QoSReliabilityPolicy.BEST_EFFORT
-        self.image_publisher = self.create_publisher(Image, '/fruit_detect_image', **{'qos_profile': pub_video_qos})
+        self.image_publisher = self.create_publisher(Image, str(camera_mode.value) + '_fruit_detect_image', **{'qos_profile': pub_video_qos})
 
 
         # TFの定義
@@ -168,7 +168,7 @@ class TomatoDetector(Node):
         self.rs_depth_image = depth_image.astype(np.uint16)
         # cv2.imshow("n_depth", self.rs_depth_image)
         # self.get_logger().info(str(max(self.rs_depth_image)))
-        self.color_image_callback(mode="rs" ,child_frame="", camera_frame="", buffer="")
+        self.color_image_callback(mode="rs" ,child_frame="rs_tomato", camera_frame="camera_link")
         
 
     def azure_image_callback(self, color_msg, depth_msg):
@@ -176,12 +176,12 @@ class TomatoDetector(Node):
         self.azure_color_image = color_tmp[0:1080, 480:1440]
         depth_tmp = self.process_image(1080, 1920, depth_msg, "16UC1")
         self.azure_depth_image = depth_tmp[0:1080, 480:1440]
-        self.color_image_callback(mode="azure", child_frame="", camera_frame="", buffer="")
+        self.color_image_callback(mode="azure", child_frame="azure_tomato", camera_frame="camera_base")
 
     def azure_depth_callback(self, msg):
         self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, msg)
 
-    def color_image_callback(self, mode, child_frame, camera_frame, buffer):
+    def color_image_callback(self, mode, child_frame, camera_frame):
         """
         from_frame_rel = self.rs_target_frame # world
         to_frame_rel = child_frame # fruit target
@@ -190,7 +190,7 @@ class TomatoDetector(Node):
         fruit_position_x = []
         fruit_position_y = []
         fruit_position_z = []
-        fruit_position_radius = []
+        fruit_radius = []
 
         # 果実の位置検出
         x, y, z, radius = self.detect_fruits(mode)
@@ -198,39 +198,40 @@ class TomatoDetector(Node):
             return
 
         try:
-            """
             t = TransformStamped()
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = camera_frame
             t.child_frame_id = child_frame
-            """
+
             for i in range(len(x)):
-                """
                 # 現在の果実座標とカメラの位置関係をTFに登録
-                t.transform.translation.x = x[i]
-                t.transform.translation.y = y[i]
-                t.transform.translation.z = z[i]
-                t.transform.rotation.x = 0
-                t.transform.rotation.y = 0
-                t.transform.rotation.z = 0
-                t.transform.rotation.w = 1
+                t.transform.translation.x = z[i]*0.001
+                t.transform.translation.y = x[i]*(-0.001)
+                t.transform.translation.z = y[i]*0.001
+                t.transform.rotation.x = 0.
+                t.transform.rotation.y = 0.
+                t.transform.rotation.z = 0.
+                t.transform.rotation.w = 1.
 
                 self.br.sendTransform(t)
 
                 # アームと果実の座標の位置関係を取得
                 now = rclpy.time.Time()
-                trans = buffer.lookup_transform(
-                    to_frame_rel,
-                    from_frame_rel,
+                trans = self.tf_buffer.lookup_transform(
+                    "link_base",
+                    child_frame,
                     now)
                 fruit_position_x.append(trans.transform.translation.x)
                 fruit_position_y.append(trans.transform.translation.y)
                 fruit_position_z.append(trans.transform.translation.z)
+                fruit_radius.append(radius[i]* 0.001)
+
                 """
                 fruit_position_x.append(x[i]*0.001)
                 fruit_position_y.append(y[i]*0.001)
                 fruit_position_z.append(z[i]*0.001)
-                fruit_position_radius.append(radius[i]*0.001)
+                fruit_radius.append(radius[i]*0.001)
+                """
 
             # 得られた位置情報をpublish
             pos_data = FruitDataList()
@@ -244,8 +245,8 @@ class TomatoDetector(Node):
 
         except TransformException as ex:
             self.get_logger().info(
-                f'Could not transform to_frame_rel to from_frame_rel: {ex}')
-            return      
+                f'Could not transform stand_base to child_frame: {ex}')
+            return    
 
 
     # 物体検出のループ処理を実行
@@ -431,17 +432,16 @@ class TomatoDetector(Node):
                 else:
                     continue
 
-            cv2.namedWindow("tomato", cv2.WINDOW_NORMAL)
+            # cv2.namedWindow("tomato", cv2.WINDOW_NORMAL)
             cv2.putText(image_np, 'FPS : '+str(round(1/(t2-t1), 2)), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 0), thickness=2)
-            cv2.imshow('tomato', image_np)
+            # cv2.imshow('tomato', image_np)
             # cv2.imshow('depth', depth_image)
-            '''
             bridge = CvBridge()
             image_msg = bridge.cv2_to_imgmsg(image_np, encoding="bgr8")
             image_msg.header.stamp = self.get_clock().now().to_msg()
-            image_msg.header.frame_id = "camera_color_frame"
+            image_msg.header.frame_id = "stand_base"
             self.image_publisher.publish(image_msg)
-            '''
+            
             cv2.waitKey(1)
         
 
@@ -514,6 +514,8 @@ def main():
             print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
     else:
         print("Not enough GPU hardware devices available")
+        
+    gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.333)
     
     detection_graph = tf.Graph()
     with detection_graph.as_default():
@@ -533,7 +535,7 @@ def main():
 
 
     with detection_graph.as_default():
-        sess = tf.compat.v1.Session(graph=detection_graph)
+        sess = tf.compat.v1.Session(graph=detection_graph, config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
         run()    
 
 if __name__=='__main__':

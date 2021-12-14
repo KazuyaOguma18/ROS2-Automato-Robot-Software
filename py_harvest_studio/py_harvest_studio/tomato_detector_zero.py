@@ -1,12 +1,3 @@
-
-"""
-進捗状況
-・花形の作成は完了
-・DLの定義はグローバル定義を行い、main関数内でwithを用いてsessionを読み込ませる
-・カラー画像とデプス画像を同期させる手法の検討が必要
-・tfについての理解
-"""
-
 from math import radians
 import cv_bridge
 from cv_bridge.core import CvBridgeError
@@ -477,6 +468,8 @@ def main():
             print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
     else:
         print("Not enough GPU hardware devices available")
+        
+    gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.333)
     
     detection_graph = tf.Graph()
     with detection_graph.as_default():
@@ -496,7 +489,7 @@ def main():
 
 
     with detection_graph.as_default():
-        sess = tf.compat.v1.Session(graph=detection_graph)
+        sess = tf.compat.v1.Session(graph=detection_graph, config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
         run()    
 
 if __name__=='__main__':
