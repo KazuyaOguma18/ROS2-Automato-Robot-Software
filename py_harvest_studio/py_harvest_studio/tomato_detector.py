@@ -58,7 +58,7 @@ class TomatoDetector(Node):
         
         self.br = TransformBroadcaster(self)
         self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)        
+        self.tf_listener = TransformListener(self.tf_buffer, self)      
             
         if str(camera_mode.value) == 'rs':
             video_qos = qos.QoSProfile(depth=10)
@@ -90,10 +90,11 @@ class TomatoDetector(Node):
             self.width_color = 960
             self.height_color = 1080
             self.width_depth = 960
-            self.height_depth = 1080 
-            
+            self.height_depth = 1080
+
             # azureのtf定義
-            self.camera_frame = "camera_base"        
+            self.camera_frame = "camera_base"
+
             
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
                
@@ -124,7 +125,6 @@ class TomatoDetector(Node):
         # self.azure_color_image = np.zeros(720, 1280)
         # self.azure_depth_image = np.zeros(720, 1280)
         
-        self.get_logger().info("camera_mode: "+str(camera_mode.value))
 
     def rs_depth_info_callback(self, cameraInfo):
         try:
@@ -153,12 +153,21 @@ class TomatoDetector(Node):
         try:
             bridge = CvBridge()
             img = bridge.imgmsg_to_cv2(image, encode)
+
+
+        except Exception as err:
+            print("image convert failed! :{}".format(err))
+            return
+
+        try:
             # print(type(img))
             h, w = img.shape[:2]
             resize_img = cv2.resize(img, dsize=(width, height), interpolation=cv2.INTER_NEAREST)
             return resize_img
+
         except Exception as err:
-            pass
+            print("image resize failed! :{}".format(err))
+            return
 
     # 各画像トピックのcallback#
     #  tfにより位置関係を取得し座標変換
@@ -191,6 +200,7 @@ class TomatoDetector(Node):
         fruit_position_y = []
         fruit_position_z = []
         fruit_radius = []
+        
 
         # 果実の位置検出
         x, y, z, radius = self.detect_fruits(mode)
@@ -199,7 +209,8 @@ class TomatoDetector(Node):
 
         try:
             t = TransformStamped()
-            t.header.stamp = self.get_clock().now().to_msg()
+            now = self.get_clock().now()
+            t.header.stamp = now.to_msg()
             t.header.frame_id = camera_frame
             t.child_frame_id = child_frame
 
@@ -214,9 +225,10 @@ class TomatoDetector(Node):
                 t.transform.rotation.w = 1.
 
                 self.br.sendTransform(t)
+                
+                time.sleep(0.1)
 
                 # アームと果実の座標の位置関係を取得
-                now = rclpy.time.Time()
                 trans = self.tf_buffer.lookup_transform(
                     "link_base",
                     child_frame,
@@ -238,7 +250,7 @@ class TomatoDetector(Node):
             pos_data.x = fruit_position_x
             pos_data.y = fruit_position_y
             pos_data.z = fruit_position_z
-            pos_data.radius = fruit_position_radius
+            pos_data.radius = fruit_radius
 
             self.publisher_.publish(pos_data)
             self.get_logger().info("Publish detect fruits")

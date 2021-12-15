@@ -72,6 +72,7 @@ Camera2Dynamixel::Camera2Dynamixel(
 ): Node("camera2dynamixel", name_space, options){
 
     joint_name[0] = "azure_camera_joint";
+    // https://ittechnicalmemos.blogspot.com/2019/09/usblinux.htmlを参考に修正
     std::string port_name="/dev/ttyUSB0";
     baudrate_=1000000;
     id_list_={1};

@@ -42,15 +42,19 @@ def quaternion_from_euler(roll, pitch, yaw):
 
 def launch_setup(context, *args, **kwargs):
 
+    xarm_ip = LaunchConfiguration('robot_ip', default='192.168.1.115')
     xarm_launch_include = GroupAction(
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(
                         get_package_share_directory('xarm_moveit_config'),
-                        'launch/xarm5_moveit_fake.launch.py'
+                        'launch/xarm5_moveit_realmove.launch.py'
                     )
-                )
+                ),
+                launch_arguments={
+                    'robot_ip': xarm_ip,
+                }.items(),
             ),
         ]
     )
