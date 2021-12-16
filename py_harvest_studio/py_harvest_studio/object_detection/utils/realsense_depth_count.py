@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 def rs_depth_counter(depth_select ,k):
 
+    # 切り抜かれたトマト画像を1次元の深度データに起こす
     d_p = np.ravel(depth_select)
         
     d_sort = np.sort(d_p)[::1]
@@ -30,7 +31,9 @@ def rs_depth_counter(depth_select ,k):
     sum_depth_counter = 0
     av = 0
     for_ave_sum = 0
-    print(max(d_list))
+    
+    # print(max(d_list))
+    # print(min(d_list))
     for n in range(len(d_list)):
         
         if d_list[n]- up < 10:

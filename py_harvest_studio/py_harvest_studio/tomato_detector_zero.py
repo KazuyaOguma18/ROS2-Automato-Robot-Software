@@ -85,9 +85,9 @@ class TomatoDetector(Node):
             azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
             azure_ts.registerCallback(self.azure_image_callback)
             #azure kinectの解像度指定
-            self.width_color = 960
+            self.width_color = 640
             self.height_color = 1080
-            self.width_depth = 960
+            self.width_depth = 640
             self.height_depth = 1080
 
             # azureのtf定義
@@ -177,9 +177,9 @@ class TomatoDetector(Node):
 
     def azure_image_callback(self, color_msg, depth_msg):
         color_tmp  = self.process_image(1080, 1920, color_msg, "bgr8")
-        self.azure_color_image = color_tmp[0:1080, 480:1440]
+        self.azure_color_image = color_tmp[0:1080, 640:1280]
         depth_tmp = self.process_image(1080, 1920, depth_msg, "16UC1")
-        self.azure_depth_image = depth_tmp[0:1080, 480:1440]
+        self.azure_depth_image = depth_tmp[0:1080, 640:1280]
         self.color_image_callback(mode="azure", child_frame="azure_tomato", camera_frame="camera_base")
 
     def azure_depth_callback(self, msg):
@@ -200,12 +200,13 @@ class TomatoDetector(Node):
 
         try:
             t = TransformStamped()
-            t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = camera_frame
             t.child_frame_id = child_frame
 
             for i in range(len(x)):
                 # 現在の果実座標とカメラの位置関係をTFに登録
+                now = self.get_clock().now()
+                t.header.stamp = now.to_msg()
                 t.transform.translation.x = z[i]*0.001
                 t.transform.translation.y = x[i]*(-0.001)
                 t.transform.translation.z = y[i]*0.001
@@ -245,7 +246,7 @@ class TomatoDetector(Node):
             self.get_logger().info("Publish detect fruits")
 
         except TransformException as ex:
-            self.get_logger().info(
+            self.get_logger().error(
                 f'Could not transform stand_base to child_frame: {ex}')
             return
 

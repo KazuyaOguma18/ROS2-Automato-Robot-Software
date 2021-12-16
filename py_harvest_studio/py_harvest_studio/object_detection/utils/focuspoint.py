@@ -52,6 +52,7 @@ def calculate_FocusPoint(k, boxes, X_c, Y_c, scale, mode):
         return cal_X, cal_Y
 
     elif mode == 2:
+        print("{}, {}".format(cal_X_left, cal_X_right))
         return cal_X_left, cal_X_right, cal_Y_up, cal_Y_low
 
 def calculate_image(image1, value, X_c, Y_c):

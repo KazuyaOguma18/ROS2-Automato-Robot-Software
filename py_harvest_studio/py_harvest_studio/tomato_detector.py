@@ -1,6 +1,4 @@
-import imp
-from re import T
-from numpy.lib.function_base import append
+from math import radians
 import cv_bridge
 from cv_bridge.core import CvBridgeError
 import rclpy
@@ -22,6 +20,8 @@ from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 
 from ament_index_python import get_package_share_directory
+
+from rclpy.duration import Duration
 
 
 import numpy as np
@@ -54,11 +54,7 @@ class TomatoDetector(Node):
         # depth画像とcolor画像の同期
         queue_size = 10
         fps = 30.
-        delay = 1/fps*0.5    
-        
-        self.br = TransformBroadcaster(self)
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)      
+        delay = 1/fps*0.5        
             
         if str(camera_mode.value) == 'rs':
             video_qos = qos.QoSProfile(depth=10)
@@ -87,9 +83,9 @@ class TomatoDetector(Node):
             azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
             azure_ts.registerCallback(self.azure_image_callback)
             #azure kinectの解像度指定
-            self.width_color = 960
+            self.width_color = 640
             self.height_color = 1080
-            self.width_depth = 960
+            self.width_depth = 640
             self.height_depth = 1080
 
             # azureのtf定義
@@ -103,7 +99,12 @@ class TomatoDetector(Node):
         pub_video_qos = qos.QoSProfile(depth=10)
         pub_video_qos = qos.QoSReliabilityPolicy.BEST_EFFORT
         self.image_publisher = self.create_publisher(Image, str(camera_mode.value) + '_fruit_detect_image', **{'qos_profile': pub_video_qos})
+        self.depth_publisher = self.create_publisher(Image, str(camera_mode.value) + '_depth_image', **{'qos_profile': pub_video_qos})
 
+
+        self.br = TransformBroadcaster(self)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)  
 
         # TFの定義
         """
@@ -182,9 +183,9 @@ class TomatoDetector(Node):
 
     def azure_image_callback(self, color_msg, depth_msg):
         color_tmp  = self.process_image(1080, 1920, color_msg, "bgr8")
-        self.azure_color_image = color_tmp[0:1080, 480:1440]
+        self.azure_color_image = color_tmp[0:1080, 640:1280]
         depth_tmp = self.process_image(1080, 1920, depth_msg, "16UC1")
-        self.azure_depth_image = depth_tmp[0:1080, 480:1440]
+        self.azure_depth_image = depth_tmp[0:1080, 640:1280]
         self.color_image_callback(mode="azure", child_frame="azure_tomato", camera_frame="camera_base")
 
     def azure_depth_callback(self, msg):
@@ -207,71 +208,101 @@ class TomatoDetector(Node):
         if not x:
             return
 
+
+        for i in range(len(x)):    
+            fruit_position_x.append(x[i])
+            fruit_position_y.append(y[i])
+            fruit_position_z.append(z[i])
+            fruit_radius.append(radius[i]* 0.001)
+            """
+            fruit_position_x.append(x[i]*0.001)
+            fruit_position_y.append(y[i]*0.001)
+            fruit_position_z.append(z[i]*0.001)
+            fruit_radius.append(radius[i]*0.001)
+            """
+        # 得られた位置情報をpublish
+        pos_data = FruitDataList()
+        pos_data.x = fruit_position_x
+        pos_data.y = fruit_position_y
+        pos_data.z = fruit_position_z
+        pos_data.radius = fruit_radius
+        self.publisher_.publish(pos_data)
+        self.get_logger().info("Publish detect fruits")
+
+ 
+        
+    def transform_tomato_position(self, x, y, z, mode):
+        if mode == 'rs':
+            camera_frame = 'camera_link'
+            child_frame = 'rs_tomato'
+            
+        elif mode == 'azure':
+            camera_frame = 'camera_base'
+            child_frame = 'azure_tomato'
+            
         try:
             t = TransformStamped()
-            now = self.get_clock().now()
-            t.header.stamp = now.to_msg()
             t.header.frame_id = camera_frame
             t.child_frame_id = child_frame
 
-            for i in range(len(x)):
-                # 現在の果実座標とカメラの位置関係をTFに登録
-                t.transform.translation.x = z[i]*0.001
-                t.transform.translation.y = x[i]*(-0.001)
-                t.transform.translation.z = y[i]*0.001
-                t.transform.rotation.x = 0.
-                t.transform.rotation.y = 0.
-                t.transform.rotation.z = 0.
-                t.transform.rotation.w = 1.
-
-                self.br.sendTransform(t)
-                
-                time.sleep(0.1)
-
-                # アームと果実の座標の位置関係を取得
-                trans = self.tf_buffer.lookup_transform(
-                    "link_base",
-                    child_frame,
-                    now)
-                fruit_position_x.append(trans.transform.translation.x)
-                fruit_position_y.append(trans.transform.translation.y)
-                fruit_position_z.append(trans.transform.translation.z)
-                fruit_radius.append(radius[i]* 0.001)
-
-                """
-                fruit_position_x.append(x[i]*0.001)
-                fruit_position_y.append(y[i]*0.001)
-                fruit_position_z.append(z[i]*0.001)
-                fruit_radius.append(radius[i]*0.001)
-                """
-
-            # 得られた位置情報をpublish
-            pos_data = FruitDataList()
-            pos_data.x = fruit_position_x
-            pos_data.y = fruit_position_y
-            pos_data.z = fruit_position_z
-            pos_data.radius = fruit_radius
-
-            self.publisher_.publish(pos_data)
-            self.get_logger().info("Publish detect fruits")
-
+            # 現在の果実座標とカメラの位置関係をTFに登録    
+            now = self.get_clock().now()
+            t.header.stamp = now.to_msg()
+            t.transform.translation.x = z*0.001
+            t.transform.translation.y = x*(-0.001)
+            t.transform.translation.z = y*0.001
+            t.transform.rotation.x = 0.
+            t.transform.rotation.y = 0.
+            t.transform.rotation.z = 0.
+            t.transform.rotation.w = 1.
+            self.br.sendTransform(t)
+            
+            # カメラと果実の座標の位置関係を取得
+            trans = self.tf_buffer.lookup_transform(                
+                "link_base",
+                camera_frame,
+                rclpy.time.Time(seconds=0), 
+                timeout=Duration(seconds=0.5))
+            
+            # トマト座標をカメラ座標系からアーム座標系へ線形変換
+            q0 = trans.transform.rotation.w
+            q1 = trans.transform.rotation.x
+            q2 = trans.transform.rotation.y
+            q3 = trans.transform.rotation.z
+            
+            rotate_matrix = np.array([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
+                                      [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
+                                      [2*(q1*q3 - q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
+            # カメラの位置
+            camera_position_matrix = np.array([trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z])
+            # カメラから見た果実の位置
+            fruit_position_matrix = np.array([z*0.001, x*(-0.001), y*0.001])
+            # 果実をカメラ座標系からアーム座標系に変換
+            transformed_fruit_matrix = np.dot(rotate_matrix, fruit_position_matrix.T) + camera_position_matrix.T
+            fruit_position = [transformed_fruit_matrix[0], transformed_fruit_matrix[1], transformed_fruit_matrix[2]]
+            
+            return fruit_position
+        
         except TransformException as ex:
-            self.get_logger().info(
-                f'Could not transform stand_base to child_frame: {ex}')
-            return    
-
-
+            self.get_logger().error(
+                f'Could not transform link_base to camera_frame: {ex}')
+            return False          
+        
     # 物体検出のループ処理を実行
     def detect_fruits(self, mode):
         if mode == "rs":
             color_image = self.rs_color_image
             depth_image = self.rs_depth_image
             intrinsics = self.rs_intrinsics
+            min_scale = 0.5
+            max_scale = 1.5
         
         elif mode == "azure":
             color_image = self.azure_color_image
             depth_image = self.azure_depth_image
-
+            min_scale = 2
+            max_scale = 3.5
+            
         # 各変数の初期化
         length = 0
         quantity = []
@@ -281,7 +312,6 @@ class TomatoDetector(Node):
         auto = False
         first = False
         detect_count = 0
-        max_scale = 3.0
         Position_X = []
         Position_Y = []
         Position_Z = []
@@ -297,27 +327,27 @@ class TomatoDetector(Node):
             if auto == True:
                 detect_count = 0
                 if first == False:
-                    value = 0.5
+                    value = min_scale
                     first = True
                     quantity = []
                     valuezoom = []
                     random_line = []
-                    X_c = -1
-                    Y_c = -1
+                    X_c = -0.5
+                    Y_c = -0.5
                 elif value != max_scale:
                     value += 0.5
 
                 elif value == max_scale:
-                    value = 0.5
-                    X_c += 1
+                    value = min_scale
+                    X_c += 0.5
 
-                if X_c == 2:
-                    Y_c += 1
-                    X_c = -1
+                if X_c == 1.0:
+                    Y_c += 0.5
+                    X_c = -0.5
                 if return_mode == True:
                     return Position_X, Position_Y, Position_Z, Radius
 
-                if X_c == 1 and Y_c == 1 and value == max_scale:
+                if X_c == 0.5 and Y_c == 0.5 and value == max_scale:
                     return_mode = True
 
                 random_line.append([X_c, Y_c])
@@ -338,7 +368,11 @@ class TomatoDetector(Node):
 
             depth_select = []
             color_select = []
-            max_depth = []            
+            max_depth = []
+            
+            x_tmp = []
+            y_tmp = []
+            z_tmp = []          
 
             #image = Image.fromarray(np.uint8(color_image))
             # the array based representation of the image will be used later in order to prepare the
@@ -346,7 +380,7 @@ class TomatoDetector(Node):
             # 画像のズーム処理
             image_np, scale = focuspoint.calculate_image(color_image, value, X_c, Y_c)
             image_np_color, scale = focuspoint.calculate_image(color_image, value, X_c, Y_c)
-            depth_image, scale = focuspoint.calculate_image(depth_image, value, X_c, Y_c)
+            depth_np, scale = focuspoint.calculate_image(depth_image, value, X_c, Y_c)
 
             # 果実及びヘタ検出
             # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
@@ -379,7 +413,7 @@ class TomatoDetector(Node):
             #color画像内の検出されたトマトデータからdepth画像を切り出す
             length = len(boxes)
             for k in range(length):
-                depth_select.append(depth_image[int(boxes[k][0]*self.height_depth):int(boxes[k][2]*self.height_depth), int(boxes[k][1]*self.width_depth):int(boxes[k][3]*self.width_depth)])
+                depth_select.append(depth_np[int(boxes[k][0]*self.height_depth):int(boxes[k][2]*self.height_depth), int(boxes[k][1]*self.width_depth):int(boxes[k][3]*self.width_depth)])
                 color_tmp = image_np_color[int(boxes[k][0]*self.height_color):int(boxes[k][2]*self.height_color), int(boxes[k][1]*self.width_color):int(boxes[k][3]*self.width_color)]
                 color_tmp = cv2.cvtColor(color_tmp, cv2.COLOR_BGR2RGB)
                 color_tmp = cv2.resize(color_tmp, (200, 200)).astype(np.float32)
@@ -409,13 +443,13 @@ class TomatoDetector(Node):
 
                     else:
                         y[k] = np.diff(y[k])
-                        pixel_x, pixel_y = focuspoint.calculate_FocusPoint(k, boxes, X_c, Y_c, scale, 1)
-                        dist = depth_image[int(pixel_y*self.height_depth)][int(pixel_x*self.width_depth)]
+                        #pixel_x, pixel_y = focuspoint.calculate_FocusPoint(k, boxes, X_c, Y_c, scale, 1)
+                        #dist = depth_image[int(pixel_y*self.height_depth)][int(pixel_x*self.width_depth)]
                         _y = list(y[k])
-                        if dist >= _y.index(max(_y)):
-                            max_depth.append(dist)
-                        else:
-                            max_depth.append(_y.index(max(_y)))
+                        #if dist >= _y.index(max(_y)):
+                            #max_depth.append(dist)
+                        #else:
+                        max_depth.append(_y.index(max(_y)))
 
                 else:
                     continue
@@ -430,9 +464,9 @@ class TomatoDetector(Node):
                     if len(max_depth) > i:
                         pixel_x_left, pixel_x_right, pixel_y_up, pixel_y_low = focuspoint.calculate_FocusPoint(k ,boxes ,X_c, Y_c ,scale, 2)
                         X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], mode)
-                        Position_X.append(float(X_meter))
-                        Position_Y.append(float(Y_meter))
-                        Position_Z.append(float(Z_meter))
+                        x_tmp.append(float(X_meter))
+                        y_tmp.append(float(Y_meter))
+                        z_tmp.append(float(Z_meter))
                         Radius.append(float(radius))
                         Tomato_Class.append(predicted[k])
                         
@@ -449,10 +483,24 @@ class TomatoDetector(Node):
             # cv2.imshow('tomato', image_np)
             # cv2.imshow('depth', depth_image)
             bridge = CvBridge()
+            depth_msg = bridge.cv2_to_imgmsg(depth_image, encoding="16UC1")
+            depth_msg.header.stamp = self.get_clock().now().to_msg()
+            depth_msg.header.frame_id = "stand_base"   
+            self.depth_publisher.publish(depth_msg)         
             image_msg = bridge.cv2_to_imgmsg(image_np, encoding="bgr8")
             image_msg.header.stamp = self.get_clock().now().to_msg()
             image_msg.header.frame_id = "stand_base"
             self.image_publisher.publish(image_msg)
+            
+            
+            
+            for i in range(len(x_tmp)):
+                trans = self.transform_tomato_position(x_tmp[i], y_tmp[i], z_tmp[i], mode)
+                if trans:
+                    Position_X.append(trans[0])
+                    Position_Y.append(trans[1])
+                    Position_Z.append(trans[2])
+                    time.sleep(0.5)
             
             cv2.waitKey(1)
         

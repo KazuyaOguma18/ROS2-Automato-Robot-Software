@@ -25,7 +25,7 @@ void AddRvizMarker::detect_list_callback(const harvest_studio_msg::msg::FruitDat
         marker.id = i;
         marker.type = visualization_msgs::msg::Marker::SPHERE;
         marker.action = visualization_msgs::msg::Marker::ADD;
-        marker.lifetime = rclcpp::Duration(1s);
+        marker.lifetime = rclcpp::Duration(3s);
         marker.scale.x = detect_list->radius[i]*0.7;
         marker.scale.y = detect_list->radius[i]*0.7;
         marker.scale.z = detect_list->radius[i]*0.7;

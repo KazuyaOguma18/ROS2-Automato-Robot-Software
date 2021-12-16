@@ -36,8 +36,10 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_dept
         theta_y_1 = math.atan(y_1*math.tan(math.radians(42.5/2)))
         theta_y_2 = math.atan(y_2*math.tan(math.radians(42.5/2)))
     elif mode == "azure":
-        theta_x_1 = math.atan(x_1*math.tan(math.radians(90/2)))
-        theta_x_2 = math.atan(x_2*math.tan(math.radians(90/2)))
+        theta_x0 = math.atan(1/3* math.tan(90/2))
+        
+        theta_x_1 = math.atan(x_1*math.tan(theta_x0))
+        theta_x_2 = math.atan(x_2*math.tan(theta_x0))
         theta_y_1 = math.atan(y_1*math.tan(math.radians(59/2)))
         theta_y_2 = math.atan(y_2*math.tan(math.radians(59/2)))
                 
@@ -60,7 +62,7 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_dept
 
     
     Z = int(depth + radius)
-    print(depth)
+    # print(depth)
     
     return X, Y, Z, radius
 
