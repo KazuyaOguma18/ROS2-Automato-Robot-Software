@@ -43,16 +43,16 @@ def calculate_FocusPoint(k, boxes, X_c, Y_c, scale, mode):
 
     cal_X = (pixel_x/scale - 0.5)*2 + (X_c + 1)*(scale - 1)/scale
     cal_Y = (pixel_y/scale - 0.5)*2 + (Y_c + 1)*(scale - 1)/scale
-    cal_X_left = (boxes[k][1]/scale - 0.5)*2 + (Y_c + 1)*(scale - 1)/scale
-    cal_X_right = (boxes[k][3] /scale - 0.5)*2 + (Y_c + 1)*(scale - 1)/scale
-    cal_Y_up = (boxes[k][0] /scale - 0.5)*2 + (X_c + 1)*(scale - 1)/scale
-    cal_Y_low = (boxes[k][2] /scale - 0.5)*2 + (X_c + 1)*(scale - 1)/scale
+    cal_X_left = (boxes[k][1]/scale - 0.5)*2 + (X_c + 1)*(scale - 1)/scale
+    cal_X_right = (boxes[k][3] /scale - 0.5)*2 + (X_c + 1)*(scale - 1)/scale
+    cal_Y_up = (boxes[k][0] /scale - 0.5)*2 + (Y_c + 1)*(scale - 1)/scale
+    cal_Y_low = (boxes[k][2] /scale - 0.5)*2 + (Y_c + 1)*(scale - 1)/scale
 
     if mode == 1:
         return cal_X, cal_Y
 
     elif mode == 2:
-        print("{}, {}".format(cal_X_left, cal_X_right))
+        # print("{}, {}".format(cal_X_left, cal_X_right))
         return cal_X_left, cal_X_right, cal_Y_up, cal_Y_low
 
 def calculate_image(image1, value, X_c, Y_c):

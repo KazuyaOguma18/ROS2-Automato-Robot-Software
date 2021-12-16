@@ -1,11 +1,4 @@
-#! /usr/bin/env python3
 
-"""
-進捗状況
-・花形の作成は完了
-・各要素の関数を埋めていく
-・複数のpubやsubを行うことができるのかサンプルコードを作成して動作確認を行っていく
-"""
 
 from os import stat
 import rclpy
@@ -105,19 +98,35 @@ class FruitDataProcessor(Node):
                 self.detect_number.append(1)
 
         # self.x内にデータにかぶりがないかどうか判定
+        # not_duplicate_x = []
+        # not_duplicate_y = []
+        # not_duplicate_z = []
+        # not_duplicate_radius = []
+        # not_duplicate_detect_number = []
         self_duplicate_index = []
         for i in range(len(self.x)):
             duplicate = False
             for j in range(i+1, len(self.x)):
                 if math.sqrt((self.x[i] - self.x[j])**2 + (self.y[i] - self.y[j])**2 + (self.z[i] - self.z[j])**2) < self.radius[i]:
                     duplicate = True
-            if duplicate:
+            if  duplicate:
+                # not_duplicate_x.append(self.x[i])
+                # not_duplicate_y.append(self.y[i])
+                # not_duplicate_z.append(self.z[i])
+                # not_duplicate_radius.append(self.radius[i])
+                # not_duplicate_detect_number.append(self.detect_number[i])
+                
                 self_duplicate_index.append(i)
 
         # self.get_logger().info("self duplicate number :" + str(len(self_duplicate_index)))
         
+
         for i in self_duplicate_index:
-            self.delete_fruit_data(i)
+            try:
+                self.delete_fruit_data(i)
+                print("deleted")
+            except Exception as err:
+                print("error : {}".format(err))
 
     # 同じ果実と判定された果実の平均座標の取得
     def get_fruit_position_average(self):
@@ -275,12 +284,12 @@ class FruitDataProcessor(Node):
             try:
                 if i == self.duplicate_index[j][0]:
                     delete_index.append(j)
-            except:
-                self.get_logger().info("nazo error")
+            except Exception as err:
+                self.get_logger().info("delete data error : {}".format(err))
 
         sorted_delete_index = sorted(delete_index, reverse=True)
         for j in sorted_delete_index:        
-            self.get_logger().info("delete data :{0}".format(len(self.duplicate_index)))
+            self.get_logger().info("delete data index:{0}".format(len(self.duplicate_index)))
             del self.duplicate_index[j][1]
             del self.duplicate_index[j][0]
 

@@ -209,25 +209,25 @@ class TomatoDetector(Node):
             return
 
 
-        for i in range(len(x)):    
-            fruit_position_x.append(x[i])
-            fruit_position_y.append(y[i])
-            fruit_position_z.append(z[i])
-            fruit_radius.append(radius[i]* 0.001)
-            """
-            fruit_position_x.append(x[i]*0.001)
-            fruit_position_y.append(y[i]*0.001)
-            fruit_position_z.append(z[i]*0.001)
-            fruit_radius.append(radius[i]*0.001)
-            """
-        # 得られた位置情報をpublish
-        pos_data = FruitDataList()
-        pos_data.x = fruit_position_x
-        pos_data.y = fruit_position_y
-        pos_data.z = fruit_position_z
-        pos_data.radius = fruit_radius
-        self.publisher_.publish(pos_data)
-        self.get_logger().info("Publish detect fruits")
+        # for i in range(len(x)):    
+        #     fruit_position_x.append(x[i])
+        #     fruit_position_y.append(y[i])
+        #     fruit_position_z.append(z[i])
+        #     fruit_radius.append(radius[i]* 0.001)
+        #     """
+        #     fruit_position_x.append(x[i]*0.001)
+        #     fruit_position_y.append(y[i]*0.001)
+        #     fruit_position_z.append(z[i]*0.001)
+        #     fruit_radius.append(radius[i]*0.001)
+        #     """
+        # # 得られた位置情報をpublish
+        # pos_data = FruitDataList()
+        # pos_data.x = fruit_position_x
+        # pos_data.y = fruit_position_y
+        # pos_data.z = fruit_position_z
+        # pos_data.radius = fruit_radius
+        # self.publisher_.publish(pos_data)
+        # self.get_logger().info("Publish detect fruits")
 
  
         
@@ -312,14 +312,16 @@ class TomatoDetector(Node):
         auto = False
         first = False
         detect_count = 0
-        Position_X = []
-        Position_Y = []
-        Position_Z = []
-        Radius = []
+
         Tomato_Class = []
         return_mode = False
 
         while True:
+            Position_X = []
+            Position_Y = []
+            Position_Z = []
+            Radius = []
+            
             t1 = time.time()
 
             if length == 0:
@@ -467,7 +469,7 @@ class TomatoDetector(Node):
                         x_tmp.append(float(X_meter))
                         y_tmp.append(float(Y_meter))
                         z_tmp.append(float(Z_meter))
-                        Radius.append(float(radius))
+                        Radius.append(float(radius) * 0.001)
                         Tomato_Class.append(predicted[k])
                         
                         cv2.putText(image_np, '(%d,%d,%d)'%(X_meter,Y_meter,Z_meter), (int((boxes[k][1] + (boxes[k][3]-boxes[k][1])/2)*self.width_color-120), int((boxes[k][0] + (boxes[k][2]-boxes[k][0])/2)*self.height_color)), cv2.FONT_ITALIC, 1.0, (255, 255, 255), thickness=2)
@@ -500,7 +502,16 @@ class TomatoDetector(Node):
                     Position_X.append(trans[0])
                     Position_Y.append(trans[1])
                     Position_Z.append(trans[2])
-                    time.sleep(0.5)
+                    # time.sleep(0.5)
+            
+            if len(x_tmp) > 0:
+                pos_data = FruitDataList()
+                pos_data.x = Position_X
+                pos_data.y = Position_Y
+                pos_data.z = Position_Z
+                pos_data.radius = Radius
+                self.publisher_.publish(pos_data)
+                self.get_logger().info("Publish detect fruits")
             
             cv2.waitKey(1)
         

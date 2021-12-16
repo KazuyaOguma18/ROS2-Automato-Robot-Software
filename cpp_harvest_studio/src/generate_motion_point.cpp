@@ -254,7 +254,7 @@ int main(int argc, char * argv[]){
             target_pose.position.z = z;
             
             yaw = calc_yaw(x,y);
-            q.setRPY(0.0, to_radians(100), yaw);
+            q.setRPY(0.0, to_radians(90), yaw);
             target_pose.orientation.x = q.w();
             target_pose.orientation.y = q.z();
             target_pose.orientation.z = q.y();
