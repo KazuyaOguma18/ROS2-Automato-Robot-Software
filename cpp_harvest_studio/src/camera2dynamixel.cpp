@@ -77,16 +77,6 @@ Camera2Dynamixel::Camera2Dynamixel(
     baudrate_=1000000;
     id_list_={1};
 
-    sub_joints = this->create_subscription<sensor_msgs::msg::JointState>(
-        "/dyna_joint_command",
-        rclcpp::QoS(10),
-        std::bind(&Camera2Dynamixel::monitor_jointstate_callback, this, std::placeholders::_1)
-    );
-    pub_arm = this->create_publisher<sensor_msgs::msg::JointState>("/dyna_joint_state", rclcpp::QoS(10));
-    timer_ = this->create_wall_timer(
-        10ms,
-        std::bind(&Camera2Dynamixel::timer_callback, this));
-
     dxl_port_handler_ = std::shared_ptr<dynamixel::PortHandler>(
         dynamixel::PortHandler::getPortHandler(port_name.c_str()));
     dxl_packet_handler_ = std::shared_ptr<dynamixel::PacketHandler>(
@@ -94,6 +84,19 @@ Camera2Dynamixel::Camera2Dynamixel(
 
     if (!open_port()){
         RCLCPP_INFO(this->get_logger(), "failed to open port");
+        RCLCPP_INFO(this->get_logger(), last_error_log_);
+        exit(1);
+    }
+    else{
+      sub_joints = this->create_subscription<sensor_msgs::msg::JointState>(
+        "/dyna_joint_command",
+        rclcpp::QoS(10),
+        std::bind(&Camera2Dynamixel::monitor_jointstate_callback, this, std::placeholders::_1)
+      );
+      pub_arm = this->create_publisher<sensor_msgs::msg::JointState>("/dyna_joint_state", rclcpp::QoS(10));
+      timer_ = this->create_wall_timer(
+        10ms,
+        std::bind(&Camera2Dynamixel::timer_callback, this));
     }
 
 

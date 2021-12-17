@@ -36,6 +36,7 @@ void create_eef_motion(float hand_data[], float radius, float pump){
     for (int i = 0; i < 2; i++){
         hand_data[i] = 0.0*radius;
     }
+    
     hand_data[2] = pump;
 }
 

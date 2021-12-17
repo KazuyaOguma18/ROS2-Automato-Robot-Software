@@ -17,11 +17,23 @@ class FruitDataProcessor(Node):
 
     def __init__(self):
         super().__init__('fruit_data_processor')
+        
+        # 動作モードの取得 : with_grasp or without_grasp
+        self.declare_parameter('grasp_mode', 'without_grasp')
+        grasp_mode = self.get_parameter('grasp_mode')
+        
+        # 各種通信系の定義
+        ## generate_motion_pointに果実位置を送信
         self.position_service_ = self.create_service(FruitPositionData, 'fruit_position_data', self.fruit_server_callback)
+        ## 現在の果実のデータ保持状況を送信
         self.fruit_status_publisher_ = self.create_publisher(Int16, 'fruit_detect_status', 10)
+        ## 現在の果実データ一覧を送信
         self.harvest_list_publisher_ = self.create_publisher(FruitDataList, 'harvest_list', 10)
+        ## generate_motion_pointに送信した果実位置を公開
         self.harvest_target_publisher_ = self.create_publisher(FruitDataList, 'harvest_target', 10)
+        ## tomato_detectorから検出された果実位置を受信
         self.list_subscriber_ = self.create_subscription(FruitDataList , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
+        ## 現在の把持回転機構のモードを受信
         self.studio_mode_subscriber_ = self.create_subscription(Int16MultiArray, 'studio_mode', self.studio_mode_callback, 10)
 
         self.timer = self.create_timer(0.5, self.timer_callback)
@@ -229,9 +241,9 @@ class FruitDataProcessor(Node):
         if request.order == True and len(self.harvest_x) > 0:
             harvest_index = 0
 
-            # 五回以上検出された信頼性のある果実から収穫
+            # 20 b回以上検出された信頼性のある果実から収穫
             for j in range(len(self.detect_number)):
-                if self.detect_number[j] > 5:
+                if self.detect_number[j] > 20:
                     harvest_index = j
                     zero_data = True
                     break
@@ -332,6 +344,8 @@ class FruitDataProcessor(Node):
             
         else:
             pass
+        
+        self.previous_rotate_mode = msg.data[1]
 
 
 
