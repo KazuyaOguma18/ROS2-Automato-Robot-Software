@@ -64,7 +64,8 @@ class HandRos2Serial(Node):
         self.goal_array[1] = request.cup
         self.goal_array[2] = request.pump
 
-        response.status = self.calc_tolerance(1.0)
+        # 角度変化が0.1度未満になったらTrueを返す
+        response.status = self.calc_tolerance(0.1)
         
         for i in range(len(self.current_array)):
             self.previous_array[i] = self.current_array[i]
@@ -94,12 +95,14 @@ class HandRos2Serial(Node):
             self.j = 0            
 
 
-
+    # 二つのモータでどちらかが指定角度以上の変化があった場合True
     def calc_tolerance(self, tolerance):
+        differ = 0
         for i in range(2):
-            self.tolerance = abs(self.current_array[i] - self.previous_array[i])
+            if differ < abs(self.current_array[i] - self.previous_array[i]):
+                differ = abs(self.current_array[i] - self.previous_array[i])
         
-        return True if self.tolerance < tolerance else False
+        return True if differ < tolerance else False
 
 def main(args=None):
     try:

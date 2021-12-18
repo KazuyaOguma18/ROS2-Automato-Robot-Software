@@ -1,3 +1,7 @@
+/*
+アームやハンドの動作生成を行うノード
+*/
+
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/qos.hpp>
 
@@ -32,10 +36,32 @@ bool success=false;
 bool hand_status = false;
 
 // エンドエフェクタの角度の生成を行う
-void create_eef_motion(float hand_data[], float radius, float pump){
-    for (int i = 0; i < 2; i++){
-        hand_data[i] = 0.0*radius;
+void create_eef_motion(float hand_data[], float radius, float pump, std::string finger){
+    // cup(hand_data[0]): 10~230
+    // finger(hand_data[1]): 10~210
+    // pump: 0~1
+
+    float threshold_radius = 0.035;
+    float max_cup = 150.0;
+    float min_cup = 10.0;
+
+    // 半径が0.035m以上の場合、10
+    // それ以下の場合、10~150の範囲を線形的に制御
+    if (radius > threshold_radius){
+        hand_data[0] = min_cup;
     }
+    else{
+        hand_data[0] = (max_cup - min_cup)/threshold_radius*radius + max_cup;
+    }
+    
+    // finger制御
+    if (finger == "open"){
+        hand_data[1] = 210.0;
+    }
+    else if (finger == "close"){
+        hand_data[1] = 10.0;
+    }
+    
     
     hand_data[2] = pump;
 }
@@ -282,14 +308,27 @@ int main(int argc, char * argv[]){
 
 
                 // ハンドの機動→キャッチまで
-                // 吸引軸伸ばす＆ポンプ駆動
-                hand_data[0] = 0.0;
-                hand_data[1] = 100.0;
+                // ハンドを開く
+                // 吸引軸伸ばす
+                hand_data[0] = 230.0;
+                hand_data[1] = 210.0;
+                hand_data[2] = 0.0;
+                hand_service(hand_client, hand_request, hand_data);
+
+                // ポンプ駆動
                 hand_data[2] = 1.0;
                 hand_service(hand_client, hand_request, hand_data);
 
+                // 吸引軸の動作量生成
+                create_eef_motion(hand_data, radius, 1.0, "open");
+                hand_service(hand_client, hand_request, hand_data);
+
                 // キャッチ
-                create_eef_motion(hand_data, radius, 1.0);
+                create_eef_motion(hand_data, radius, 1.0, "close");
+                hand_service(hand_client, hand_request, hand_data);
+
+                // ポンプ停止
+                create_eef_motion(hand_data, radius, 0.0, "close");
                 hand_service(hand_client, hand_request, hand_data);
 
                 // オブジェクトの把持
@@ -322,9 +361,13 @@ int main(int argc, char * argv[]){
                 }
 
                 //　ハンドの把持を解除
-                hand_data[0] = 0.0;
-                hand_data[1] = 0.0;
+                hand_data[0] = 10.0;
+                hand_data[1] = 210.0;
                 hand_data[2] = 0.0;
+                hand_service(hand_client, hand_request, hand_data);
+
+                // 把持の終了
+                hand_data[1] = 10.0;
                 hand_service(hand_client, hand_request, hand_data);
 
                 // オブジェクトの把持を解除
