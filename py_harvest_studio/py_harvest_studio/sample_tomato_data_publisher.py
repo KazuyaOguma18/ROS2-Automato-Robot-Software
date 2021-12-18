@@ -14,7 +14,7 @@ class SampleTomatoDataPublisher(Node):
     def timer_callback(self):
         data = FruitDataList()
         
-        x = [0.5, 0.6, 0.55]
+        x = [0.55, 0.6, 0.55]
         y = [-0.1, 0.1, 0.0]
         z = [0.6, 0.5, 0.45]
         r = 0.06

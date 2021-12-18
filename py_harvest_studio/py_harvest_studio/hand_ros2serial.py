@@ -1,10 +1,5 @@
-#! /usr/bin/env python3
-
-""" 
-進捗状況
-・おおよそのコーディングは完了
-・動作確認が終わっていない
-"""
+# ハンドへの信号をシリアル化して行うノード
+# ros2 service call /hand_data harvest_studio_msg/srv/EndEffectorControl "{hand: 10.0, cup: 10.0, pump: 0.0}"
 
 import serial
 import rclpy
@@ -34,7 +29,7 @@ class HandRos2Serial(Node):
             self.srv = self.create_service(EndEffectorControl, 'hand_data', self.hand_data_real_callback)
 
             self.timer_ = self.create_timer(0.1, self.timer_callback)
-            self.ser = serial.Serial("/dev/ttyUSB0", 115200, timeout=0.1)
+            self.ser = serial.Serial("/dev/ttyUSB-XBee", 115200, timeout=0.1)
 
         self.goal_array = [0,0,0]
         self.current_array = [0,0,0]
@@ -46,6 +41,8 @@ class HandRos2Serial(Node):
 
         # 目標値との誤差計算用
         self.tolerance = 0
+        
+        print("control mode: {}".format(self.control_mode.value))
 
 
 
@@ -69,30 +66,39 @@ class HandRos2Serial(Node):
         
         for i in range(len(self.current_array)):
             self.previous_array[i] = self.current_array[i]
+            
+        senddata = bytes(str(self.goal_array[0]) + "," + str(self.goal_array[1]) + "," + str(self.goal_array[2]), encoding='utf-8')
         
-        self.ser.write(str(self.goal_array[0]) + "," + str(self.goal_array[1]) + "," + str(self.goal_array[2])) 
+        self.ser.write(senddata) 
 
         return response
 
     # 周期性の制御
     def timer_callback(self):
         print("reading...")
-        line = self.ser.readline().strip()
-        line_s = line.split(",")
+        
+        try:
+            line = self.ser.readline().strip().decode('utf-8')
+            line_s = line.split(",")
+            line_s.remove('')
+            # print(line_s)
 
-        if len(line_s) > 1:
-            self.current_array = [float(s) for s in line_s]
-            print(str(self.current_array) + "-" + str(self.i) + "-")
-            # self.ser.write("data get\r\n")
-            self.i = 0
-            self.j = self.j + 1
+            if len(line_s) > 1:
+                self.current_array = [float(s) for s in line_s]
+                print(str(self.current_array) + "-" + str(self.j) + "-")
+                # self.ser.write("data get\r\n")
+                self.i = 0
+                self.j = self.j + 1
 
-        else:
-            print("No data recieved -{}-".format(self.i))
-            print("--------------------")
-            # self.ser.write("No data\n")
-            self.i = self.i+1
-            self.j = 0            
+            else:
+                print("No data recieved -{}-".format(self.i))
+                print("--------------------")
+                # self.ser.write("No data\n")
+                self.i = self.i+1
+                self.j = 0     
+                
+        except Exception as err:
+            print("exception has occured: {}".format(err))      
 
 
     # 二つのモータでどちらかが指定角度以上の変化があった場合True
