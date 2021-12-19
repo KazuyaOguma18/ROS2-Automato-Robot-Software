@@ -6,6 +6,7 @@
 import rclpy
 from rclpy.node import Node
 
+from std_msgs.msg import Int16
 from std_msgs.msg import Int16MultiArray
 from sensor_msgs.msg import JointState
 
