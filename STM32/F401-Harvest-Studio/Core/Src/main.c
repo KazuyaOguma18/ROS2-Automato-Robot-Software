@@ -120,7 +120,7 @@ int pot_rotate_control(uint16_t count){
 		E = pow(A/(2*B),2) + pow(w/2,2) - pow(r1,2);
 		pot_radius = (-D -sqrt(pow(D,2) - 4*C*E))/(2*C);
 
-		need_count = (uint16_t)pot_radius/ 10/*motor gear radius*/ * 360 * 0.25 - start_count;
+		need_count = (uint16_t)pot_radius/r1 * 10 / 6 * 360 * 0.25 - start_count;
 	}
 
 	if (count < need_count/4){
