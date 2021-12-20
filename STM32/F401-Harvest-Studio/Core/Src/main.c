@@ -91,10 +91,14 @@ float read_arm_encoder_value(int n);
 int16_t read_rotary_encoder_value(void);
 int distance_read(void);
 
+// ポットの半径に基づく1/4回転を台形制御により実装
 int pot_rotate_control(uint16_t count){
 	static int first = 1;
 	static uint16_t start_count;
-	uint16_t need_count;
+	static uint16_t need_count;
+
+	uint16_t max_speed = 50;
+	uint16_t min_speed = 10;
 
 	float pot_radius;
 	float arm_angle;
@@ -124,24 +128,24 @@ int pot_rotate_control(uint16_t count){
 	}
 
 	if (count < need_count/4){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)4*(300-50)/need_count*count);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)4*(max_speed-min_speed)/need_count*count + min_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 0;
 	}
 	else if(count >= need_count/4 && count < need_count*3/4){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 300);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, max_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 0;
 	}
 	else if(count >= need_count*3/4 && count < need_count){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(-1200)/need_count*count + 1200);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(-4*max_speed)/need_count*count + 4*max_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 0;
 	}
 	else{
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-		first=1;
+		first = 1;
 		return 1;
 	}
 }
@@ -297,12 +301,14 @@ int main(void)
   while (1)
   {
 	  /* debug */
+	  /*
 	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
 		  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, 0);
 	  }
 	  else{
 		  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, 1);
 	  }
+	  */
 
 	  /* communication */
 	  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, pot_rotate_mode);
@@ -314,7 +320,7 @@ int main(void)
 		  dual_arm_control(0.0);
 		  /*把持司令信号を取得するまで待機*/
 		  /*信号取得->mode=1*/
-		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6)==1){
+		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 0){
 			  mode = 1;
 		  }
 
@@ -381,7 +387,7 @@ int main(void)
 			  /*回転信号を4回受信->mode=4*/
 		  }
 		  else if(waiting == 1){
-			  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1){
+			  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1){
 				  waiting = 0;
 			  }
 		  }
@@ -389,7 +395,7 @@ int main(void)
 
 	  case 4:
 		  /*把持解除司令を受信->mode=0*/
-		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == 1){
+		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1){
 			  mode = 0;
 		  }
 		  break;

@@ -24,6 +24,7 @@ class HarvestStudioRasp(Node):
         self.data_array = [0,0,0]
         self.right_joint_state = 0.
         self.left_joint_state = 0.
+        self.zero_count = 0
         
         # Raspberry Pi のセットアップ
         self.roatate_pin = 22
@@ -38,18 +39,29 @@ class HarvestStudioRasp(Node):
         
     # STM32の動作モードによって出力ピンを決定する
     def fruit_status_callback(self, data):
-        if self.studio_mode == 0 or self.studio_mode == 4:
-            if data.data == 0:
-                GPIO.output(self.grasp_pin, True)
-            
-            else:
-                GPIO.output(self.grasp_pin, False)
+        if self.studio_mode == 0:
+            GPIO.output(self.grasp_pin, True)
+            GPIO.output(self.rotate_pin, False)
                 
+        elif self.studio_mode == 4:
+            GPIO.output(self.grasp_pin, True)
+            GPIO.output(self.rotate_pin, True)            
+                
+        # ポット回転モードで10回以上データの受信がない場合ポットの回転を行う
         elif self.studio_mode == 3:
             if data.data == 0:
-                GPIO.output(self.roatate_pin, True)
-            
+                if self.zero_count > 10:
+                    GPIO.output(self.grasp_pin, False)
+                    GPIO.output(self.roatate_pin, True)
+                    self.zero_count = 0
+                
+                else:
+                    self.zero_count += 1
+                    GPIO.output(self.grasp_pin, False)
+                    GPIO.output(self.roatate_pin, False) 
+                    
             else:
+                GPIO.output(self.grasp_pin, False)
                 GPIO.output(self.roatate_pin, False) 
                 
         else:
