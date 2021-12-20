@@ -20,8 +20,10 @@ class HarvestStudioRasp(Node):
         self.jointstate_publisher = self.create_publisher(JointState, 'arm_joint_state', 10)
         self.mode_publisher = self.create_publisher(Int16MultiArray, 'studio_mode', 10)
         self.timer_ = self.create_timer(0.1, self.timer_callback)
-        self.mode = 0
+        self.studio_mode = 0
         self.data_array = [0,0,0]
+        self.right_joint_state = 0.
+        self.left_joint_state = 0.
         
         # Raspberry Pi のセットアップ
         self.roatate_pin = 22
@@ -36,14 +38,14 @@ class HarvestStudioRasp(Node):
         
     # STM32の動作モードによって出力ピンを決定する
     def fruit_status_callback(self, data):
-        if self.mode == 0 or self.mode == 4:
+        if self.studio_mode == 0 or self.studio_mode == 4:
             if data.data == 0:
                 GPIO.output(self.grasp_pin, True)
             
             else:
                 GPIO.output(self.grasp_pin, False)
                 
-        elif self.mode == 3:
+        elif self.studio_mode == 3:
             if data.data == 0:
                 GPIO.output(self.roatate_pin, True)
             
@@ -53,35 +55,43 @@ class HarvestStudioRasp(Node):
         else:
             pass           
 
-            
-    def timer_callback(self):
-        line = self.serial.readline().strip()
-        line_s = line.split(",")
-        
+    def serial_timer_callback(self):
         try:
+            line = self.serial.readline().strip().decode('utf-8')
+            line_s = line.split(",")
             if len(line_s) > 3:
-                self.data_array = [float(s) for s in line_s]
-                
-                # 角度情報をpublish
-                jointstate = JointState()
-                jointstate.name.append('right_arm_joint')
-                jointstate.name.append('left_arm_joint')
-                
-                jointstate.position.append(s[0])
-                jointstate.position.append(s[1])
-                
-                self.jointstate_publisher.publish(jointstate)
-                
-                # 現在のモード情報を取得
+                self.current_data = [float(s) for s in line_s]
+                print(str(self.current_data))
+
+                self.right_joint_state = s[0]
+                self.left_joint_state = s[1]
                 self.studio_mode = int(s[2])
                 self.rotate_mode = int(s[3])
-                mode = Int16MultiArray()
-                mode.data.append(self.studio_mode)
-                mode.data.append(self.rotate_mode)
-                self.mode_publisher(mode)
-                
-        except:
-            pass
+
+
+            else:
+                print("No data recieved")
+        except Exception as err:
+            print("[demo] exception has occured: {}".format(err))
+            
+    def timer_callback(self):
+
+        # 角度情報を配信
+        jointstate = JointState()
+        jointstate.name.append('right_arm_joint')
+        jointstate.name.append('left_arm_joint')
+
+        jointstate.position.append(self.right_joint_state)
+        jointstate.position.append(self.left_joint_state)
+
+        self.jointstate_publisher.publish(jointstate)
+
+        # 現在の把持回転機構の動作モードを配信
+        mode = Int16MultiArray()
+        mode.data.append(self.studio_mode)
+        mode.data.append(self.rotate_mode)
+
+        self.mode_publisher(mode)
                   
             
 def main(args=None):
@@ -93,6 +103,8 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
+        GPIO.output(22, False)
+        GPIO.output(23, False)
         processsor.destroy_node()
         rclpy.shutdown()
 
