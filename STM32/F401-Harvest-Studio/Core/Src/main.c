@@ -20,7 +20,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #define _USE_MATH_DEFINES
@@ -151,11 +150,10 @@ int pot_rotate_control(uint16_t count){
 }
 
 void dual_arm_control(float target_angle){
-	static float sensor_angle;
-	static int pid_value;
+	float sensor_angle;
+	int pid_value;
 
 	/* left arm control */
-	/*
 	sensor_angle = read_arm_encoder_value(1);
 	pid_value = motor_pid(1, sensor_angle, target_angle, 0);
 	if (pid_value > 0){
@@ -165,7 +163,6 @@ void dual_arm_control(float target_angle){
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 	}
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, abs(pid_value));
-	*/
 
 	/* right arm control */
 	sensor_angle = read_arm_encoder_value(2);
@@ -192,11 +189,11 @@ int motor_pid(int n, float sensor_angle, float target_angle, int reset){
 	p = P_GAIN * diff[n][1];
 	i = I_GAIN * integral[n];
 	d = D_GAIN * (diff[n][1] - diff[n][0]) / DELTA_T;
-	if (p+i+d > 200.0){
-		return 200.0;
+	if (p+i+d > 50.0){
+		return 50;
 	}
-	else if (p+i+d < -200.0){
-		return -200.0;
+	else if (p+i+d < -50.0){
+		return -50;
 	}
 	else{
 		return (int)p+i+d;
@@ -340,26 +337,26 @@ int main(void)
 	  case 2:
 		  /*アームを動作,スイッチの接触判定が起こるまで*/
 
-		  /* right arm control */
+		  /* left arm control */
 		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
-			  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 50);
+			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 20);
 		  }
 		  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0){
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
 		  }
 
-		  /* left arm control */
+		  /* right arm control */
 		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
 			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 50);
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 20);
 		  }
 		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
 		  }
 
 		  /*スイッチ接触->アーム動作を停止,mode=3*/
-		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0 && HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
+		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0 && HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
 			  mode = 3;
 		  }
 
@@ -853,8 +850,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA4 PA6 PA7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7;
+  /*Configure GPIO pin : PA4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -864,6 +861,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA6 PA7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB0 */
