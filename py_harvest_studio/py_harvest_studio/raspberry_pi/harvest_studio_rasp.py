@@ -36,7 +36,7 @@ class HarvestStudioRasp(Node):
         self.grasp_pin = 22
         self.reset_pin = 24
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.roatate_pin, GPIO.OUT)
+        GPIO.setup(self.rotate_pin, GPIO.OUT)
         GPIO.setup(self.grasp_pin, GPIO.OUT)
         GPIO.setup(self.reset_pin, GPIO.OUT)
         
@@ -62,17 +62,18 @@ class HarvestStudioRasp(Node):
             if data.data == 0:
                 if self.zero_count > 10:
                     GPIO.output(self.grasp_pin, False)
-                    GPIO.output(self.roatate_pin, True)
+                    GPIO.output(self.rotate_pin, True)
                     self.zero_count = 0
                 
                 else:
                     self.zero_count += 1
                     GPIO.output(self.grasp_pin, False)
-                    GPIO.output(self.roatate_pin, False) 
+                    GPIO.output(self.rotate_pin, False) 
                     
             else:
+                self.zero_count = 0;
                 GPIO.output(self.grasp_pin, False)
-                GPIO.output(self.roatate_pin, False) 
+                GPIO.output(self.rotate_pin, False) 
                 
         else:
             pass          
@@ -121,6 +122,8 @@ class HarvestStudioRasp(Node):
         self.mode_publisher.publish(mode_pub)
         
         print("now rotating: " + str(self.is_rotation))
+        GPIO.output(self.grasp_pin, False)
+        GPIO.output(self.rotate_pin, False) 
                   
     def reset_stm32(self):
         # STM32のリセット
