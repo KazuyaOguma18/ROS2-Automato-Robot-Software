@@ -14,7 +14,7 @@
   * License. You may obtain a copy of the License at:
   *                        opensource.org/licenses/BSD-3-Clause
   *
-  ******************************************************************************
+  *******count***********************************************************************
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
@@ -83,28 +83,27 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int pot_rotate_control(uint16_t count);
+uint16_t pot_rotate_control(uint16_t count);
 void dual_arm_control(float target_angle);
 int motor_pid(int n, float sensor_angle, float target_angle, int reset);
 float read_arm_encoder_value(int n);
-int16_t read_rotary_encoder_value(void);
+uint16_t read_rotary_encoder_value(void);
 int distance_read(void);
 
 // ポット�??��半�?に基づ?��?1/4回転を台形制御により実�?
-int pot_rotate_control(uint16_t count){
+uint16_t pot_rotate_control(uint16_t count){
 	static int first = 1;
-	static uint16_t start_count;
 	static uint16_t need_count;
+	static uint16_t now_count = 0;
 
-	uint16_t max_speed = 50;
-	uint16_t min_speed = 10;
+	uint16_t max_speed = 10;
+	uint16_t min_speed = 5;
 
 	float pot_radius;
 	float arm_angle;
 
 	if (first == 1){
 		float a,b,c,d,w,r1,r2,A,B,C,D,E;
-		start_count = count;
 		first = 0;
 		// calculate pot radius
 		a = 212.5;
@@ -123,29 +122,35 @@ int pot_rotate_control(uint16_t count){
 		E = pow(A/(2*B),2) + pow(w/2,2) - pow(r1,2);
 		pot_radius = (-D -sqrt(pow(D,2) - 4*C*E))/(2*C);
 
-		need_count = (uint16_t)pot_radius/r1 * 10 / 6 * 360 * 0.25 - start_count;
+		need_count = (uint16_t)pot_radius/r1 * 10 / 6 * 360 * 0.25;
 	}
 
-	if (count < need_count/4){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)4*(max_speed-min_speed)/need_count*count + min_speed);
+	now_count += count;
+
+	if (now_count < need_count/4){
+		// __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(4*(max_speed-min_speed)/need_count*now_count + min_speed));
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, min_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-		return 0;
+		return 1;
 	}
-	else if(count >= need_count/4 && count < need_count*3/4){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, max_speed);
+	else if(now_count >= need_count/4 && now_count < need_count/2){
+		// __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, max_speed);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, min_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-		return 0;
+		return 2;
 	}
-	else if(count >= need_count*3/4 && count < need_count){
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(-4*max_speed)/need_count*count + 4*max_speed);
+	else if(now_count >= need_count/2 && now_count < need_count){
+		// __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(2*min_speed*(1 - 1/need_count*now_count)));
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, min_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-		return 0;
+		return 3;
 	}
 	else{
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		first = 1;
-		return 1;
+		now_count = 0;
+		return 65535;
 	}
 }
 
@@ -218,14 +223,14 @@ float read_arm_encoder_value(int n){
 	return DegAngle*0.6;
 }
 
-int16_t read_rotary_encoder_value(void){
+uint16_t read_rotary_encoder_value(void){
 	uint16_t enc_buff = TIM4->CNT;
 	TIM4->CNT = 0;
 	if (enc_buff > 32767){
-		return (int16_t)enc_buff;
+		return enc_buff;
 	}
 	else{
-		return (int16_t)enc_buff;
+		return enc_buff;
 	}
 }
 
@@ -279,6 +284,8 @@ int main(void)
   int mode = 0;
   int pot_rotate_mode = 0;
   int waiting = 0;
+  int pot_grasping = 1;
+  uint16_t is_rotating = 0;
   uint8_t usr_buf[1000];
 
   /* Start PWM */
@@ -308,7 +315,7 @@ int main(void)
 	  */
 
 	  /* communication */
-	  sprintf(usr_buf, "%d, %d, %d, %d\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, pot_rotate_mode);
+	  sprintf(usr_buf, "%d, %d, %d, %d, %u\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, pot_rotate_mode, is_rotating);
 
 	  HAL_UART_Transmit(&huart2, usr_buf, strlen(usr_buf), 100);
 	  switch(mode){
@@ -327,8 +334,12 @@ int main(void)
 		  /*アー?��?角を0度に設?��?*/
 		  dual_arm_control(0.0);
 		  /*測距センサの閾値を上回るまで?��??��?*/
-		  if (distance_read() > 3000){
+		  if (distance_read() > 3000 && pot_grasping == 0){
 			  mode = 2;
+			  pot_grasping = 1;
+		  }
+		  else{
+			  pot_grasping = 0;
 		  }
 		  /*閾値?��??��?->mode=2*/
 
@@ -348,7 +359,7 @@ int main(void)
 
 		  /* right arm control */
 		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
-			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 20);
 		  }
 		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
@@ -371,22 +382,27 @@ int main(void)
 		  /*受信?��?90度回転??��?��台形制御)*/
 		  if (waiting == 0){
 			  if (pot_rotate_mode > 0 && pot_rotate_mode <= 4){
-				  if(pot_rotate_control((uint16_t)read_rotary_encoder_value())==1){
+				  is_rotating = pot_rotate_control((uint16_t)read_rotary_encoder_value());
+				  if(is_rotating == 65535){
 					  pot_rotate_mode++;
 					  /*こ�??��まま?��?とノンストップでポットが?��?回転してしま?��?ので、新しくGPIOから入力されるまで?��?機す?��?*/
 					  waiting = 1;
+					  break;
 				  }
 			  }
 			  else if (pot_rotate_mode == 5){
 				  pot_rotate_mode = 0;
 				  mode = 4;
+				  break;
 			  }
 			  /*回転信号?��?4回受信->mode=4*/
 		  }
 		  else if(waiting == 1){
-			  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1){
+			  is_rotating = 0;
+			  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1){
 				  waiting = 0;
 			  }
+			  break;
 		  }
 		  break;
 
@@ -398,7 +414,7 @@ int main(void)
 		  break;
 	  }
 
-	  /* Recieved reset signal from Raspberry Pi -> System reset*/
+	  /* Received reset signal from Raspberry Pi -> System reset*/
 	  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 1){
 		  NVIC_SystemReset();
 	  }
