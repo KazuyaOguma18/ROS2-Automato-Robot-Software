@@ -23,6 +23,8 @@ class HarvestStudioRasp(Node):
         # シリアル通信用の配列の初期化
         self.current_data = [0,0]
 
+        # STM32のリセット
+        self.reset_stm32()
 
 
     def serial_timer_callback(self):
@@ -49,6 +51,12 @@ class HarvestStudioRasp(Node):
         self.mode = not self.mode
         # time.sleep(0.4)       
 
+    def reset_stm32(self):
+        # STM32のリセット
+        GPIO.output(self.reset_pin, True)
+        time.sleep(0.1)
+        GPIO.output(self.reset_pin, False) 
+        
 def main(args=None):
     try:
         rclpy.init(args=args)

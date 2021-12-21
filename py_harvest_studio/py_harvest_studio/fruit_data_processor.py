@@ -54,6 +54,16 @@ class FruitDataProcessor(Node):
         
         # 以前のポット回転モード
         self.previous_rotate_mode = 0
+        
+        # 収穫スタジオの動作モード
+        '''
+        0: 初期モード (把持角度0度、信号待機)
+        1: 測距モード (把持角度0度、測距センサが閾値を超えるまで待機)
+        2: 把持モード (アーム動作、接触判定が起こるまで)
+        3: ポット回転モード (ポット回転、1/4回転ごとに制御)
+        4: 解除モード (特に制御なし)
+        '''
+        self.studio_mode = 3
 
 
 
@@ -61,27 +71,25 @@ class FruitDataProcessor(Node):
     # 重複果実のチェック、果実座標の平均取得、果実位置の線形変換＆平面距離取得＆ソート
     def fruit_detect_list_callback(self, msg):
 
-        self.duplicate_index = []
+        if self.studio_mode == 3:
+            self.duplicate_index = []
 
-        self.msg_x = msg.x
-        self.msg_y = msg.y
-        self.msg_z = msg.z
-        self.msg_radius = msg.radius
+            self.msg_x = msg.x
+            self.msg_y = msg.y
+            self.msg_z = msg.z
+            self.msg_radius = msg.radius
 
-        self.check_duplicate_fruits(msg)
-        # self.get_logger().info("check_duplicate_fruits")
-        self.get_fruit_position_average()
-        # self.get_logger().info("fruit_position_average")
-        self.fruit_position_linear_tf()
-        # self.get_logger().info("fruit_position_linear_tf")
+            self.check_duplicate_fruits(msg)
+            # self.get_logger().info("check_duplicate_fruits")
+            self.get_fruit_position_average()
+            # self.get_logger().info("fruit_position_average")
+            self.fruit_position_linear_tf()
+            # self.get_logger().info("fruit_position_linear_tf")
 
-        self.harvest_x = self.x
-        self.harvest_y = self.y
-        self.harvest_z = self.z
-        self.harvest_radius = self.radius
-
-
-
+            self.harvest_x = self.x
+            self.harvest_y = self.y
+            self.harvest_z = self.z
+            self.harvest_radius = self.radius
         
         # self.get_logger().info("harvest_list_publish")
 
@@ -346,6 +354,7 @@ class FruitDataProcessor(Node):
             pass
         
         self.previous_rotate_mode = msg.data[1]
+        self.studio_mode = msg.data[0]
 
 
 
