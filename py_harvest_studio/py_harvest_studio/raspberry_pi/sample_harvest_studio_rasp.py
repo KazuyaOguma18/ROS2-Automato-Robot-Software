@@ -13,13 +13,17 @@ class HarvestStudioRasp(Node):
         # Raspberry Pi のセットアップ
         self.roatate_pin = 22
         self.grasp_pin = 23
+        self.reset_pin = 24
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.roatate_pin, GPIO.OUT)
         GPIO.setup(self.grasp_pin, GPIO.OUT)
+        GPIO.setup(self.reset_pin, GPIO.OUT)
         # シリアル通信の設定
         self.serial = serial.Serial("/dev/ttyACM0", 115200, timeout=0.1)
         # シリアル通信用の配列の初期化
         self.current_data = [0,0]
+
+
 
     def serial_timer_callback(self):
         try:
@@ -32,7 +36,7 @@ class HarvestStudioRasp(Node):
                 print("No data recieved")
         except Exception as err:
             print("[demo] exception has occured: {}".format(err))
-            
+
     def timer_callback(self):
         if self.mode == True:
             GPIO.output(self.roatate_pin, True)
@@ -43,7 +47,7 @@ class HarvestStudioRasp(Node):
         else:
             GPIO.output(self.grasp_pin, False)
         self.mode = not self.mode
-        # time.sleep(0.4)
+        # time.sleep(0.4)       
 
 def main(args=None):
     try:

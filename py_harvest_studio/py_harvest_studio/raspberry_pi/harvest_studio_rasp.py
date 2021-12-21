@@ -12,6 +12,7 @@ from sensor_msgs.msg import JointState
 
 import RPi.GPIO as GPIO
 import serial
+import time
 
 class HarvestStudioRasp(Node):
     def __init__(self):
@@ -35,7 +36,10 @@ class HarvestStudioRasp(Node):
         
         # シリアル通信の設定
         self.serial = serial.Serial("/dev/ttyACM0", 115200, timeout=0.1)
-        
+
+        # STM32のリセット
+        self.reset_stm32()
+
         
     # STM32の動作モードによって出力ピンを決定する
     def fruit_status_callback(self, data):
@@ -105,7 +109,12 @@ class HarvestStudioRasp(Node):
 
         self.mode_publisher(mode)
                   
-            
+    def reset_stm32(self):
+        # STM32のリセット
+        GPIO.output(self.reset_pin, True)
+        time.sleep(0.1)
+        GPIO.output(self.reset_pin, False) 
+
 def main(args=None):
     try:
         rclpy.init(args=args)

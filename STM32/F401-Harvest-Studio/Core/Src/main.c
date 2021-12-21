@@ -90,7 +90,7 @@ float read_arm_encoder_value(int n);
 int16_t read_rotary_encoder_value(void);
 int distance_read(void);
 
-// ポットの半径に基づく1/4回転を台形制御により実装
+// ポット�??��半�?に基づ?��?1/4回転を台形制御により実�?
 int pot_rotate_control(uint16_t count){
 	static int first = 1;
 	static uint16_t start_count;
@@ -175,7 +175,7 @@ void dual_arm_control(float target_angle){
 	}
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, abs(pid_value));
 }
-/* n: 1 or 2(モータ番号)、sensor_angle: エンコーダの出力角度、target_angle: 目標角度、reset: 0 or 1（integralを0にするかどうか）*/
+/* n: 1 or 2(モータ番号)、sensor_angle: エンコー?��?の出力角度、target_angle: 目標角度、reset: 0 or 1??��?integral?��?0にするかど?��?か�?*/
 int motor_pid(int n, float sensor_angle, float target_angle, int reset){
 	static signed long diff[2][2];
 	static float integral[2];
@@ -313,10 +313,10 @@ int main(void)
 	  HAL_UART_Transmit(&huart2, usr_buf, strlen(usr_buf), 100);
 	  switch(mode){
 	  case 0:
-		  /*アーム角を0度に設定*/
+		  /*アー?��?角を0度に設?��?*/
 		  dual_arm_control(0.0);
-		  /*把持司令信号を取得するまで待機*/
-		  /*信号取得->mode=1*/
+		  /*把持司令信号を取得するまで?��??��?*/
+		  /*信号取�?->mode=1*/
 		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 0){
 			  mode = 1;
 		  }
@@ -324,18 +324,18 @@ int main(void)
 		  break;
 
 	  case 1:
-		  /*アーム角を0度に設定*/
+		  /*アー?��?角を0度に設?��?*/
 		  dual_arm_control(0.0);
-		  /*測距センサの閾値を上回るまで待機*/
+		  /*測距センサの閾値を上回るまで?��??��?*/
 		  if (distance_read() > 3000){
 			  mode = 2;
 		  }
-		  /*閾値超え->mode=2*/
+		  /*閾値?��??��?->mode=2*/
 
 		  break;
 
 	  case 2:
-		  /*アームを動作,スイッチの接触判定が起こるまで*/
+		  /*アー?��?を動?��?,スイ?��?�?��??��接触判定が起こるまで*/
 
 		  /* left arm control */
 		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
@@ -355,7 +355,7 @@ int main(void)
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
 		  }
 
-		  /*スイッチ接触->アーム動作を停止,mode=3*/
+		  /*スイ?��?チ接触->アー?��?動作を停止,mode=3*/
 		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0 && HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
 			  mode = 3;
 		  }
@@ -363,17 +363,17 @@ int main(void)
 		  break;
 
 	  case 3:
-		  /*ポット回転モード*/
-		  /*ポット回転信号を受信するまで待機*/
+		  /*Pot rotate mode*/
+		  /*ポット回転信号を受信するまで?��??��?*/
 		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1 && pot_rotate_mode == 0){
 			  pot_rotate_mode = 1;
 		  }
-		  /*受信後90度回転（台形制御)*/
+		  /*受信?��?90度回転??��?��台形制御)*/
 		  if (waiting == 0){
 			  if (pot_rotate_mode > 0 && pot_rotate_mode <= 4){
 				  if(pot_rotate_control((uint16_t)read_rotary_encoder_value())==1){
 					  pot_rotate_mode++;
-					  /*このままだとノンストップでポットが一回転してしまうので、新しくGPIOから入力されるまで待機する*/
+					  /*こ�??��まま?��?とノンストップでポットが?��?回転してしま?��?ので、新しくGPIOから入力されるまで?��?機す?��?*/
 					  waiting = 1;
 				  }
 			  }
@@ -381,7 +381,7 @@ int main(void)
 				  pot_rotate_mode = 0;
 				  mode = 4;
 			  }
-			  /*回転信号を4回受信->mode=4*/
+			  /*回転信号?��?4回受信->mode=4*/
 		  }
 		  else if(waiting == 1){
 			  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 1){
@@ -397,6 +397,12 @@ int main(void)
 		  }
 		  break;
 	  }
+
+	  /* Recieved reset signal from Raspberry Pi -> System reset*/
+	  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 1){
+		  NVIC_SystemReset();
+	  }
+
 	  HAL_Delay(DELTA_T * 100);
 
     /* USER CODE END WHILE */
@@ -868,6 +874,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB0 */
   GPIO_InitStruct.Pin = GPIO_PIN_0;
