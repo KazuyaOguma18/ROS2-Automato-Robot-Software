@@ -1,0 +1,34 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/ogumak/ros2_ws/install/xarm_controller/include/**",
+        "/home/ogumak/ros2_ws/install/xarm_api/include/**",
+        "/home/ogumak/ros2_ws/install/xarm_planner/include/**",
+        "/home/ogumak/ros2_ws/install/xarm_msgs/include/**",
+        "/home/ogumak/ros2_ws/install/xarm_gazebo/include/**",
+        "/home/ogumak/ros2_ws/install/harvest_studio_msg/include/**",
+        "/home/ogumak/ros2_ws/install/dynamixel_sdk_custom_interfaces/include/**",
+        "/home/ogumak/ros2_ws/install/dynamixel_sdk/include/**",
+        "/opt/ros/foxy/include/**",
+        "/home/ogumak/ros2_ws/src/Azure_Kinect_ROS_Driver/include/**",
+        "/home/ogumak/ros2_ws/src/DynamixelSDK/dynamixel_sdk/include/**",
+        "/home/ogumak/ros2_ws/src/DynamixelSDK/dynamixel_sdk_examples/include/**",
+        "/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/cpp_harvest_studio/include/**",
+        "/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/harvest_studio_msg/include/**",
+        "/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/xarm_ros2/xarm_api/include/**",
+        "/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/xarm_ros2/xarm_controller/include/**",
+        "/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/xarm_ros2/xarm_gazebo/include/**",
+        "/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/xarm_ros2/xarm_moveit_servo/include/**",
+        "/home/ogumak/ros2_ws/src/ROS2-Automato-Robot-Software/xarm_ros2/xarm_planner/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}

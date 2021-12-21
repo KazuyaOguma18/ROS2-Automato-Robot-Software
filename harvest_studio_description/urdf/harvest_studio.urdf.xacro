@@ -1,0 +1,19 @@
+<robot name="" xmlns:xacro="thhp://ros.org/wiki/xacro">
+    <xacro:arg name="dof" default="5"/>
+    <xacro:include filename="$(find xarm_description)/urdf/xarm_device.urdf.xacro"/>
+    <xacro:include filename="$(find harvest_studio_description)/harvest_studio_robot.urdf.xacro"/>
+    
+    <!--<xacro:include filename="$(find harvest_studio_description)/harvest_studio_endeffector.urdf.xacro"/>-->
+
+    <joint name="arm_stand_joint" type="fixed">
+        <origin rpy="0 0 1.57" xyz="0 0 0"/>
+        <parent link="world"/>
+        <child link="stand_base"/>
+    </joint>
+
+    <!--<joint name="arm_eef_joint" type="fixed">
+        <origin rpy="1.57 0 0" xyz="0 0 0.097"/>
+        <parent link="link_eef"/>
+        <child link="end_effector"/>
+    </joint>-->
+</robot>
