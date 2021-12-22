@@ -39,7 +39,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define P_GAIN 0.5
+#define P_GAIN 1.0
 #define I_GAIN 0.05
 #define D_GAIN 0.01
 #define DELTA_T 0.01
@@ -96,8 +96,8 @@ uint16_t pot_rotate_control(uint16_t count){
 	static uint16_t need_count;
 	static uint16_t now_count = 0;
 
-	uint16_t max_speed = 10;
-	uint16_t min_speed = 5;
+	uint16_t max_speed = 8;
+	uint16_t min_speed = 6;
 
 	float pot_radius;
 	float arm_angle;
@@ -122,7 +122,7 @@ uint16_t pot_rotate_control(uint16_t count){
 		E = pow(A/(2*B),2) + pow(w/2,2) - pow(r1,2);
 		pot_radius = (-D -sqrt(pow(D,2) - 4*C*E))/(2*C);
 
-		need_count = (uint16_t)pot_radius/r1 * 10 / 6 * 360 * 0.25;
+		need_count = (uint16_t)pot_radius/r1 * 10 / 6 * 720 * 0.25;
 	}
 
 	now_count += count;
@@ -135,7 +135,7 @@ uint16_t pot_rotate_control(uint16_t count){
 	}
 	else if(now_count >= need_count/4 && now_count < need_count/2){
 		// __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, max_speed);
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, min_speed);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, max_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 2;
 	}
@@ -194,11 +194,11 @@ int motor_pid(int n, float sensor_angle, float target_angle, int reset){
 	p = P_GAIN * diff[n][1];
 	i = I_GAIN * integral[n];
 	d = D_GAIN * (diff[n][1] - diff[n][0]) / DELTA_T;
-	if (p+i+d > 5.0){
-		return 5;
+	if (p+i+d > 8.0){
+		return 8;
 	}
-	else if (p+i+d < -5.0){
-		return -5;
+	else if (p+i+d < -8.0){
+		return -8;
 	}
 	else{
 		return (int)p+i+d;
@@ -206,17 +206,23 @@ int motor_pid(int n, float sensor_angle, float target_angle, int reset){
 }
 
 float read_arm_encoder_value(int n){
+	HAL_StatusTypeDef returnValue = 0;
 	uint16_t RawAngle;
 	double DegAngle;
 	uint8_t Encoder_Buff[2];
 	if (n==1){
-		HAL_I2C_Mem_Read(&hi2c1, AS5600_DEV_ADDRESS, AS5600_REG_RAW_ANGLE,
+		returnValue = HAL_I2C_Mem_Read(&hi2c1, AS5600_DEV_ADDRESS, AS5600_REG_RAW_ANGLE,
 					I2C_MEMADD_SIZE_8BIT, (uint8_t*)Encoder_Buff, 2, 5000);
 	}
 	else if (n==2){
-		HAL_I2C_Mem_Read(&hi2c3, AS5600_DEV_ADDRESS, AS5600_REG_RAW_ANGLE,
+		returnValue = HAL_I2C_Mem_Read(&hi2c3, AS5600_DEV_ADDRESS, AS5600_REG_RAW_ANGLE,
 					I2C_MEMADD_SIZE_8BIT, (uint8_t*)Encoder_Buff, 2, 5000);
 	}
+
+	if (returnValue == HAL_ERROR){
+		NVIC_SystemReset();
+	}
+
 	RawAngle = (uint16_t) Encoder_Buff[0] << 8 | (uint16_t) Encoder_Buff[1];
 	RawAngle &= 0x0FFF;
 	DegAngle = RawAngle * 360 / AS5600_RESOLUTION_PPR - 180.0;
@@ -285,6 +291,8 @@ int main(void)
   int pot_rotate_mode = 0;
   int waiting = 0;
   int pot_grasping = 0;
+  float last_right_value = 0;
+  float last_left_value = 0;
   uint16_t is_rotating = 0;
   uint8_t usr_buf[1000];
 
@@ -314,10 +322,16 @@ int main(void)
 	  }
 	  */
 
+	  /* Received reset signal from Raspberry Pi -> System reset*/
+	  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 0){
+		  NVIC_SystemReset();
+	  }
+
 	  /* communication */
 	  sprintf(usr_buf, "%d, %d, %d, %d, %u\n\r", (int)read_arm_encoder_value(1), (int)read_arm_encoder_value(2), mode, pot_rotate_mode, is_rotating);
 
 	  HAL_UART_Transmit(&huart2, usr_buf, strlen(usr_buf), 100);
+
 	  switch(mode){
 	  case 0:
 		  /*アー?��?角を0度に設?��?*/
@@ -349,23 +363,33 @@ int main(void)
 		  break;
 
 	  case 2:
-		  /*アー?��?を動?��?,スイ?��?�?��??��接触判定が起こるまで*/
+		  /*move arm, while each touch detection*/
 
 		  /* left arm control */
-		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
+		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
 			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 5);
+			  /* if arm doesn't work, increase the duty ratio*/
+			  if (last_left_value - read_arm_encoder_value(1) < 0.1){
+				  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 50);
+			  }
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 10);
+			  last_left_value = read_arm_encoder_value(1);
 		  }
-		  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0){
+		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
 		  }
 
 		  /* right arm control */
-		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
+		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
 			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 5);
+			  /* if arm doesn't work, increase the duty ratio*/
+			  if (last_right_value - read_arm_encoder_value(2) < 0.1){
+				  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 50);
+			  }
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 10);
+			  last_right_value = read_arm_encoder_value(2);
 		  }
-		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
+		  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
 		  }
 
@@ -415,11 +439,6 @@ int main(void)
 			  mode = 0;
 		  }
 		  break;
-	  }
-
-	  /* Received reset signal from Raspberry Pi -> System reset*/
-	  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 0){
-		  NVIC_SystemReset();
 	  }
 
 	  HAL_Delay(DELTA_T * 100);
