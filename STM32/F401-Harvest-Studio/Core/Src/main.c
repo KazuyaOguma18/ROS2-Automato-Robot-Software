@@ -140,7 +140,7 @@ uint16_t pot_rotate_control(uint16_t count){
 		return 2;
 	}
 	else if(now_count >= need_count/2 && now_count < need_count){
-		// __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(2*min_speed*(1 - 1/need_count*now_count)));
+		// __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, (uint16_t)(2*min_speed*(1 - now_count/need_count)));
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, min_speed);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		return 3;
@@ -194,11 +194,11 @@ int motor_pid(int n, float sensor_angle, float target_angle, int reset){
 	p = P_GAIN * diff[n][1];
 	i = I_GAIN * integral[n];
 	d = D_GAIN * (diff[n][1] - diff[n][0]) / DELTA_T;
-	if (p+i+d > 50.0){
-		return 50;
+	if (p+i+d > 5.0){
+		return 5;
 	}
-	else if (p+i+d < -50.0){
-		return -50;
+	else if (p+i+d < -5.0){
+		return -5;
 	}
 	else{
 		return (int)p+i+d;
@@ -284,7 +284,7 @@ int main(void)
   int mode = 0;
   int pot_rotate_mode = 0;
   int waiting = 0;
-  int pot_grasping = 1;
+  int pot_grasping = 0;
   uint16_t is_rotating = 0;
   uint8_t usr_buf[1000];
 
@@ -324,7 +324,10 @@ int main(void)
 		  dual_arm_control(0.0);
 		  /*把持司令信号を取得するまで?��??��?*/
 		  /*信号取�?->mode=1*/
-		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 0){
+		  if (distance_read() < 1000){
+			  pot_grasping = 0;
+		  }
+		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == 1 && HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == 0 && pot_grasping == 0){
 			  mode = 1;
 		  }
 
@@ -351,7 +354,7 @@ int main(void)
 		  /* left arm control */
 		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==1){
 			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 20);
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 5);
 		  }
 		  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
@@ -360,7 +363,7 @@ int main(void)
 		  /* right arm control */
 		  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==1){
 			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 20);
+			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 5);
 		  }
 		  else if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)==0){
 			  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
@@ -415,7 +418,7 @@ int main(void)
 	  }
 
 	  /* Received reset signal from Raspberry Pi -> System reset*/
-	  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 1){
+	  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 0){
 		  NVIC_SystemReset();
 	  }
 
