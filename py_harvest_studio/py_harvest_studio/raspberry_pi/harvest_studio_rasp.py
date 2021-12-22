@@ -71,7 +71,7 @@ class HarvestStudioRasp(Node):
                     GPIO.output(self.rotate_pin, False) 
                     
             else:
-                self.zero_count = 0;
+                self.zero_count = 0
                 GPIO.output(self.grasp_pin, False)
                 GPIO.output(self.rotate_pin, False) 
                 
@@ -123,15 +123,20 @@ class HarvestStudioRasp(Node):
         
         print("now rotating: " + str(self.is_rotation))
         GPIO.output(self.grasp_pin, False)
-        GPIO.output(self.rotate_pin, False) 
-                  
+        GPIO.output(self.rotate_pin, False)
+
     def reset_stm32(self):
         # STM32のリセット
-        GPIO.output(self.reset_pin, True)
+        GPIO.output(self.reset_pin, False)
         time.sleep(0.1)
+        GPIO.output(self.reset_pin, True) 
+        GPIO.output(self.rotate_pin, False)
+        GPIO.output(self.grasp_pin, False)
+
+    def kill_stm32(self):
         GPIO.output(self.reset_pin, False) 
-        GPIO.output(22, False)
-        GPIO.output(23, False)
+        GPIO.output(self.rotate_pin, False)
+        GPIO.output(self.grasp_pin, False)
 
 def main(args=None):
     global processor
@@ -144,7 +149,7 @@ def main(args=None):
         pass
     
     finally:
-        processor.reset_stm32()
+        processor.kill_stm32()
         processor.destroy_node()
         rclpy.shutdown()
 
