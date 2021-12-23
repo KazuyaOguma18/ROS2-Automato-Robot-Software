@@ -1,4 +1,4 @@
-
+# 誤検出情報
 
 from os import stat
 import rclpy
@@ -48,9 +48,10 @@ class FruitDataProcessor(Node):
         self.harvest_list = FruitDataList()
 
         # 収穫を行う果実
-        self.harvest_x = []
-        self.harvest_y = []
-        self.harvest_z = []
+        self.harvest = FruitData()
+        # self.harvest_x = []
+        # self.harvest_y = []
+        # self.harvest_z = []
         
         # 以前のポット回転モード
         self.previous_rotate_mode = 0
@@ -63,7 +64,10 @@ class FruitDataProcessor(Node):
         3: ポット回転モード (ポット回転、1/4回転ごとに制御)
         4: 解除モード (特に制御なし)
         '''
-        self.studio_mode = 3
+        self.studio_mode = 0
+        
+        # ポットが回転中かどうか取得
+        self.is_rotation = 0
 
 
 
@@ -71,25 +75,40 @@ class FruitDataProcessor(Node):
     # 重複果実のチェック、果実座標の平均取得、果実位置の線形変換＆平面距離取得＆ソート
     def fruit_detect_list_callback(self, msg):
 
-        if self.studio_mode == 3:
+        if self.studio_mode == 3 and self.is_rotation == 0:
             self.duplicate_index = []
 
-            self.msg_x = msg.x
-            self.msg_y = msg.y
-            self.msg_z = msg.z
-            self.msg_radius = msg.radius
+            self.msg = FruitData()
+            # 新規果実が奥すぎないかチェック
+            for i in range(len(msg.x)):
+                if msg.x[i] < 0.8:
+                    self.msg.x.append(msg.x[i])
+                    self.msg.y.append(msg.y[i])
+                    self.msg.z.append(msg.z[i])
+                    self.msg.radius.append(msg.radius[i])         
+                       
+            # self.msg_x = msg.x
+            # self.msg_y = msg.y
+            # self.msg_z = msg.z
+            # self.msg_radius = msg.radius
 
-            self.check_duplicate_fruits(msg)
+            self.check_duplicate_fruits(self.msg)
             # self.get_logger().info("check_duplicate_fruits")
             self.get_fruit_position_average()
             # self.get_logger().info("fruit_position_average")
             self.fruit_position_linear_tf()
             # self.get_logger().info("fruit_position_linear_tf")
 
-            self.harvest_x = self.x
-            self.harvest_y = self.y
-            self.harvest_z = self.z
-            self.harvest_radius = self.radius
+            
+            self.harvest.x = self.x
+            self.harvest.y = self.y
+            self.harvest.z = self.z
+            self.harvest.radius = self.radius
+            
+            # self.harvest_x = self.x
+            # self.harvest_y = self.y
+            # self.harvest_z = self.z
+            # self.harvest_radius = self.radius
         
         # self.get_logger().info("harvest_list_publish")
 
@@ -188,10 +207,10 @@ class FruitDataProcessor(Node):
                     
 
             else:
-                self.x[self.duplicate_index[i][0]] += self.msg_x[self.duplicate_index[i][1]]
-                self.y[self.duplicate_index[i][0]] += self.msg_y[self.duplicate_index[i][1]]
-                self.z[self.duplicate_index[i][0]] += self.msg_z[self.duplicate_index[i][1]]
-                self.radius[self.duplicate_index[i][0]] += self.msg_radius[self.duplicate_index[i][1]]
+                self.x[self.duplicate_index[i][0]] += self.msg.x[self.duplicate_index[i][1]]
+                self.y[self.duplicate_index[i][0]] += self.msg.y[self.duplicate_index[i][1]]
+                self.z[self.duplicate_index[i][0]] += self.msg.z[self.duplicate_index[i][1]]
+                self.radius[self.duplicate_index[i][0]] += self.msg.radius[self.duplicate_index[i][1]]
                 self.detect_number[self.duplicate_index[i][0]] += 1
                 
         del self.duplicate_index[-1]
@@ -246,7 +265,7 @@ class FruitDataProcessor(Node):
             pass
 
         zero_data = False
-        if request.order == True and len(self.harvest_x) > 0:
+        if request.order == True and len(self.harvest.x) > 0:
             harvest_index = 0
 
             # 20 b回以上検出された信頼性のある果実から収穫
@@ -257,17 +276,17 @@ class FruitDataProcessor(Node):
                     break
 
             if len(self.harvest_x) >= harvest_index+1:
-                responce.x = self.harvest_x[harvest_index]
-                responce.y = self.harvest_y[harvest_index]
-                responce.z = self.harvest_z[harvest_index]
-                responce.radius = self.harvest_radius[harvest_index]
+                responce.x = self.harvest.x[harvest_index]
+                responce.y = self.harvest.y[harvest_index]
+                responce.z = self.harvest.z[harvest_index]
+                responce.radius = self.harvest.radius[harvest_index]
                 responce.success = True
 
                 harvest_target = FruitDataList()
-                harvest_target.x.append(self.harvest_x[harvest_index])
-                harvest_target.y.append(self.harvest_y[harvest_index])
-                harvest_target.z.append(self.harvest_z[harvest_index])
-                harvest_target.radius.append(self.harvest_radius[harvest_index])
+                harvest_target.x.append(self.harvest.x[harvest_index])
+                harvest_target.y.append(self.harvest.y[harvest_index])
+                harvest_target.z.append(self.harvest.z[harvest_index])
+                harvest_target.radius.append(self.harvest.radius[harvest_index])
 
                 self.harvest_target_publisher_.publish(harvest_target)
 
@@ -335,15 +354,13 @@ class FruitDataProcessor(Node):
     
     # ポットの回転モードが変化したら配列を初期化   
     def studio_mode_callback(self, msg):
-        if self.previous_rotate_mode != msg.data[1]:
+        if self.previous_rotate_mode != msg.data[1] or msg.data[2] != 0:
             # 果実情報を配列に代入
             self.x = []
             self.y = []
             self.z = []
             self.radius = []
             self.detect_number = []
-
-            self.harvest_list = FruitDataList()
 
             # 収穫を行う果実
             self.harvest_x = []
@@ -355,7 +372,16 @@ class FruitDataProcessor(Node):
         
         self.previous_rotate_mode = msg.data[1]
         self.studio_mode = msg.data[0]
+        self.is_rotation = msg.data[2]
 
+
+# 果実情報のコンストラクタ
+class FruitData:
+    def __init__(self):
+        self.x = []
+        self.y = []
+        self.z = []
+        self.radius = []
 
 
 def main(args=None):

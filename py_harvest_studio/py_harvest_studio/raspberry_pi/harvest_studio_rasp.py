@@ -117,6 +117,7 @@ class HarvestStudioRasp(Node):
         mode_array = []
         mode_array.append(self.studio_mode)
         mode_array.append(self.rotate_mode)
+        mode_array.append(self.is_rotation)
         
         mode_pub = Int16MultiArray(data = mode_array)
         self.mode_publisher.publish(mode_pub)
