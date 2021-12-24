@@ -35,8 +35,8 @@ private:
 
     void detect_status_callback(const std_msgs::msg::Int16::SharedPtr status);
     void studio_mode_callback(const std_msgs::msg::Int16MultiArray::SharedPtr mode_array);
-    void rs_loop_complete_callback();
-    void azure_loop_complete_callback();
+    void rs_loop_complete_callback(const std_msgs::msg::Empty::SharedPtr empty);
+    void azure_loop_complete_callback(const std_msgs::msg::Empty::SharedPtr empty);
     int harvest_completed(int rs_loop_comlete_count,
                           int azure_loop_complete_count,
                           int detect_status);

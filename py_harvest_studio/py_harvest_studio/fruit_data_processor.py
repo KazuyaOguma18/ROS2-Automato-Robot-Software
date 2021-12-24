@@ -1,5 +1,3 @@
-# 誤検出情報
-
 from os import stat
 import rclpy
 from rclpy.node import Node
@@ -36,7 +34,7 @@ class FruitDataProcessor(Node):
         ## 現在の把持回転機構のモードを受信
         self.studio_mode_subscriber_ = self.create_subscription(Int16MultiArray, 'studio_mode', self.studio_mode_callback, 10)
 
-        self.timer = self.create_timer(0.5, self.timer_callback)
+        self.timer = self.create_timer(0.1, self.timer_callback)
 
         # 果実情報を配列に代入
         self.x = []
@@ -68,6 +66,9 @@ class FruitDataProcessor(Node):
         
         # ポットが回転中かどうか取得
         self.is_rotation = 0
+        
+        # 収穫用データが更新されなくなったカウント
+        self.not_harvest_count = 0
 
 
 
@@ -275,7 +276,7 @@ class FruitDataProcessor(Node):
                     zero_data = True
                     break
 
-            if len(self.harvest_x) >= harvest_index+1:
+            if len(self.harvest.x) >= harvest_index+1:
                 responce.x = self.harvest.x[harvest_index]
                 responce.y = self.harvest.y[harvest_index]
                 responce.z = self.harvest.z[harvest_index]
@@ -307,6 +308,15 @@ class FruitDataProcessor(Node):
             responce.radius = 0.0
             responce.success = False
 
+        if self.previous_data_len == len(self.x):
+            # 果実の情報が収穫データに移行しなくなったら5カウント後初期化
+            if self.not_harvest_count > 5:
+                self.not_harvest_count = 0
+                self.initialize()
+                
+            self.not_harvest_count += 1
+        
+        self.previous_data_len = len(self.x)
         
         return responce
 
@@ -355,17 +365,7 @@ class FruitDataProcessor(Node):
     # ポットの回転モードが変化したら配列を初期化   
     def studio_mode_callback(self, msg):
         if self.previous_rotate_mode != msg.data[1] or msg.data[2] != 0:
-            # 果実情報を配列に代入
-            self.x = []
-            self.y = []
-            self.z = []
-            self.radius = []
-            self.detect_number = []
-
-            # 収穫を行う果実
-            self.harvest_x = []
-            self.harvest_y = []
-            self.harvest_z = []
+            self.initialize()
             
         else:
             pass
@@ -374,6 +374,18 @@ class FruitDataProcessor(Node):
         self.studio_mode = msg.data[0]
         self.is_rotation = msg.data[2]
 
+    def initialize(self):
+        # 果実情報を配列に代入
+        self.x = []
+        self.y = []
+        self.z = []
+        self.radius = []
+        self.detect_number = []
+
+        # 収穫を行う果実
+        self.harvest_x = []
+        self.harvest_y = []
+        self.harvest_z = []        
 
 # 果実情報のコンストラクタ
 class FruitData:

@@ -120,12 +120,12 @@ void HarvestStudioControl::studio_mode_callback(const std_msgs::msg::Int16MultiA
 }
 
 // realsenseが１ループ分物体検出を完了した信号を受信
-void HarvestStudioControl::rs_loop_complete_callback(){
+void HarvestStudioControl::rs_loop_complete_callback(const std_msgs::msg::Empty::SharedPtr empty){
     rs_loop_complete_count++;
 }
 
 // kinectが１ループ分物体検出を完了した信号を受信
-void HarvestStudioControl::azure_loop_complete_callback(){
+void HarvestStudioControl::azure_loop_complete_callback(const std_msgs::msg::Empty::SharedPtr empty){
     azure_loop_complete_count++;
 }
 
@@ -148,11 +148,11 @@ HarvestStudioControl::HarvestStudioControl(
 
 HarvestStudioControl::HarvestStudioControl(
     const std::string& name_space,
-    const rclcpp::Nodeoptions& options
+    const rclcpp::NodeOptions& options
 ): Node("harvest_studio_control", name_space, options){
-    jointstate_pub = this->create_publisher<sensor_msgs::msg::JointState>("dyna_joint_command", rclcpp::Qos(10));
+    jointstate_pub = this->create_publisher<sensor_msgs::msg::JointState>("dyna_joint_command", rclcpp::QoS(10));
     
-    studio_unit_pub = this->create_publisher<std_msgs::msg::Int16>("studio_control_signal");
+    studio_control_signal_pub = this->create_publisher<std_msgs::msg::Int16>("studio_control_signal", rclcpp::QoS(10));
 
     detect_status_sub = this->create_subscription<std_msgs::msg::Int16>(
         "fruit_detect_status",
@@ -166,13 +166,13 @@ HarvestStudioControl::HarvestStudioControl(
 
     rs_loop_complete_sub = this->create_subscription<std_msgs::msg::Empty>(
         "rs_loop_comlete",
-        rclcpp::Qos(10),
-        std::bind(&HarvestStudioControl::rs_loop_complete_sub));
+        rclcpp::QoS(10),
+        std::bind(&HarvestStudioControl::rs_loop_complete_callback, this , _1));
 
     azure_loop_complete_sub = this->create_subscription<std_msgs::msg::Empty>(
         "azure_loop_comlete",
-        rclcpp::Qos(10),
-        std::bind(&HarvestStudioControl::azure_loop_complete_sub));
+        rclcpp::QoS(10),
+        std::bind(&HarvestStudioControl::azure_loop_complete_callback, this, _1));
 
     angle_value = to_radian(-30.0);    
 }
