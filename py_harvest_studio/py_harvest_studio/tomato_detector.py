@@ -10,6 +10,7 @@ from rclpy.qos import qos_profile_sensor_data
 from harvest_studio_msg.msg import FruitDataList
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CameraInfo
+from std_msgs.msg import Empty
 from cv_bridge import CvBridge
 
 from tf2_ros import TransformException
@@ -100,6 +101,7 @@ class TomatoDetector(Node):
         pub_video_qos = qos.QoSReliabilityPolicy.BEST_EFFORT
         self.image_publisher = self.create_publisher(Image, str(camera_mode.value) + '_fruit_detect_image', **{'qos_profile': pub_video_qos})
         self.depth_publisher = self.create_publisher(Image, str(camera_mode.value) + '_depth_image', **{'qos_profile': pub_video_qos})
+        self.loop_complete_publisher = self.create_publisher(Empty, str(camera_mode.value) + '_loop_complete', 10)
 
 
         self.br = TransformBroadcaster(self)
@@ -205,6 +207,10 @@ class TomatoDetector(Node):
 
         # 果実の位置検出
         x, y, z, radius = self.detect_fruits(mode)
+        
+        # loop処理完了時のデータを送信
+        emp_data = Empty()
+        self.loop_complete_publisher.publish(emp_data)
         if not x:
             return
 
