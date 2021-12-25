@@ -41,6 +41,14 @@ from py_harvest_studio.object_detection.utils import realsense_depth_distance as
 from py_harvest_studio.object_detection.utils import focuspoint
 import message_filters
 
+class Intrinsics:
+    def __init__(self):
+        self.width = None
+        self.height = None
+        self.ppx = None
+        self.ppy = None
+        self.fx = None
+        self.fy = None
 
 
 class TomatoDetector(Node):
@@ -62,7 +70,7 @@ class TomatoDetector(Node):
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
             rs_color_subscriber = message_filters.Subscriber(self, Image, '/rs_color/image_com', **{'qos_profile': video_qos})
             rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
-            self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
+            sub_rs_info = self.create_subscription(CameraInfo, '/camera/alighed_depth_to_color/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
             self.rs_intrinsics = None
             rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
             rs_ts.registerCallback(self.rs_image_callback)         
@@ -81,6 +89,7 @@ class TomatoDetector(Node):
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
             azure_color_subscriber = message_filters.Subscriber(self, Image, '/azure/rgb/image_raw', **{'qos_profile': video_qos})
             azure_depth_subscriber = message_filters.Subscriber(self, Image, '/azure/depth_to_rgb/image_raw', **{'qos_profile': video_qos})
+            sub_azure_info = self.create_subscription(CameraInfo, '/azure/depth_to_rgb/camera_info', self.azure_depth_info_callback, qos_profile_sensor_data)
             azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
             azure_ts.registerCallback(self.azure_image_callback)
             #azure kinectの解像度指定
@@ -134,6 +143,8 @@ class TomatoDetector(Node):
             if self.rs_intrinsics:
                 return
 
+            self.intrinsics = Intrinsics()
+            # ここから制作
             self.rs_intrinsics = rs2.intrinsics()
             self.rs_intrinsics.width = cameraInfo.width
             self.rs_intrinsics.height = cameraInfo.height
