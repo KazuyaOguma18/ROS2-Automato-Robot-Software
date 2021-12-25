@@ -11,7 +11,7 @@ double to_radian(double degree);
 class HarvestStudioControl : public rclcpp::Node{
 protected:
     sensor_msgs::msg::JointState jointstate;
-    float angle_value;
+    double angle_value;
     int studio_mode = 0;
     int pot_rotate_mode = 0;
     int is_rotating = 0;

@@ -19,6 +19,7 @@ class HarvestStudioRasp(Node):
     def __init__(self):
         super().__init__('harvest_studio_rasp')
         self.fruit_status_subscriber = self.create_subscription(Int16, 'fruit_detect_status', self.fruit_status_callback, 10)
+        self.studio_control_signal_subscriber = self.create_subscription(Int16, 'studio_control_signal', self.studio_control_signal_callback, 10)
         self.jointstate_publisher = self.create_publisher(JointState, 'arm_joint_state', 10)
         self.mode_publisher = self.create_publisher(Int16MultiArray, 'studio_mode', 10)
         self.timer_ = self.create_timer(0.1, self.timer_callback)
@@ -39,6 +40,10 @@ class HarvestStudioRasp(Node):
         GPIO.setup(self.rotate_pin, GPIO.OUT)
         GPIO.setup(self.grasp_pin, GPIO.OUT)
         GPIO.setup(self.reset_pin, GPIO.OUT)
+
+        # 把持・回転機構の制御信号
+        self.studio_control_signal = 0
+        self.studio_control_signal_recieved = False
         
         # シリアル通信の設定
         self.serial = serial.Serial("/dev/ttyACM0", 115200, timeout=0.1)
@@ -46,32 +51,34 @@ class HarvestStudioRasp(Node):
         # STM32のリセット
         self.reset_stm32()
 
-        
+    # 把持・回転機構の制御信号のコールバック
+    def studio_control_signal_callback(self, msg):
+        # 0: setup
+        # 1: end
+        # 2: rotate
+        self.studio_control_signal_recieved = True
+        self.studio_control_signal = msg.data
+
+    
     # STM32の動作モードによって出力ピンを決定する
     def fruit_status_callback(self, data):
         if self.studio_mode == 0:
-            GPIO.output(self.grasp_pin, True)
-            GPIO.output(self.rotate_pin, False)
+            if self.studio_control_signal == 0:
+                GPIO.output(self.grasp_pin, True)
+                GPIO.output(self.rotate_pin, False)
                 
         elif self.studio_mode == 4:
-            GPIO.output(self.grasp_pin, True)
-            GPIO.output(self.rotate_pin, True)        
+            if self.studio_control_signal == 1:
+                GPIO.output(self.grasp_pin, True)
+                GPIO.output(self.rotate_pin, True)        
                 
-        # ポット回転モードで10回以上データの受信がない場合ポットの回転を行う
+
         elif self.studio_mode == 3:
-            if data.data == 0:
-                if self.zero_count > 10:
-                    GPIO.output(self.grasp_pin, False)
-                    GPIO.output(self.rotate_pin, True)
-                    self.zero_count = 0
-                
-                else:
-                    self.zero_count += 1
-                    GPIO.output(self.grasp_pin, False)
-                    GPIO.output(self.rotate_pin, False) 
+            if self.studio_control_signal == 2:
+                GPIO.output(self.grasp_pin, False)
+                GPIO.output(self.rotate_pin, True)
                     
             else:
-                self.zero_count = 0
                 GPIO.output(self.grasp_pin, False)
                 GPIO.output(self.rotate_pin, False) 
                 

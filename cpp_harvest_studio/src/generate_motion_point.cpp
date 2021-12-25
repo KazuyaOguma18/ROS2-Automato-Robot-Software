@@ -24,7 +24,7 @@
 #include <memory>
 #include <cmath>
 
-#define TRY_MOTION_GENERATE_COUNT 10
+#define TRY_MOTION_GENERATE_COUNT 5
 
 using namespace std::chrono_literals;
 
@@ -73,19 +73,11 @@ double to_radians(const double deg_angle){
 double calc_yaw(double x, double y){
     double yaw;
     if (x==0.0){
-        if (y > 0.0){
-            yaw = M_PI_2;
-        }
-        else if (y < 0.0){
-            yaw = -M_PI_2;
-        }
-        else{
-            yaw = 0.0;
-        }
+        if (y > 0.0) {yaw = M_PI_2;}
+        else if (y < 0.0) { yaw = -M_PI_2;}
+        else { yaw = 0.0;}
     }
-    else{
-        yaw = atan(y/x);
-    }
+    else {yaw = atan(y/x);}
 
     return yaw;
 }
@@ -117,12 +109,15 @@ void hand_service(rclcpp::Client<harvest_studio_msg::srv::EndEffectorControl>::S
     hand_request->pump = eef_data[2];
     
     while (!hand_status){
+        // 1秒ごとに制御信号を送信してハンド側の状態を監視する
         auto result = hand_client->async_send_request(hand_request, std::bind(&hand_callback_response, std::placeholders::_1));
-        rclcpp::sleep_for(10s);
+        rclcpp::sleep_for(1s);
+        // RCLCPP_INFO(rclcpp::get_logger("EndEffector Control"), "result : false");
         // hand_status = result.get()->status;
     }
-    
 
+    // 次の呼び出し時にtrueのままだとループが回らないので，falseに
+    hand_status = false;
 }
 
 // トマトのモデルをオブジェクトとしてrviz上に反映
