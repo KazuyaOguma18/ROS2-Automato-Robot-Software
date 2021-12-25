@@ -517,7 +517,7 @@ class TomatoDetector(Node):
                 pos_data.z = Position_Z
                 pos_data.radius = Radius
                 self.publisher_.publish(pos_data)
-                self.get_logger().info("Publish detect fruits")
+                # self.get_logger().info("Publish detect fruits")
             
             cv2.waitKey(1)
         

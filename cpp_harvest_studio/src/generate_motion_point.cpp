@@ -118,7 +118,8 @@ void hand_service(rclcpp::Client<harvest_studio_msg::srv::EndEffectorControl>::S
     
     while (!hand_status){
         auto result = hand_client->async_send_request(hand_request, std::bind(&hand_callback_response, std::placeholders::_1));
-        hand_status = result.get()->status;
+        rclcpp::sleep_for(10s);
+        // hand_status = result.get()->status;
     }
     
 
@@ -281,7 +282,7 @@ int main(int argc, char * argv[]){
             target_pose.position.z = z;
             
             yaw = calc_yaw(x,y);
-            q.setRPY(0.0, to_radians(90), yaw);
+            q.setRPY(0.0, to_radians(100), yaw);
             target_pose.orientation.x = q.w();
             target_pose.orientation.y = q.z();
             target_pose.orientation.z = q.y();

@@ -63,12 +63,15 @@ class FruitDataProcessor(Node):
         4: 解除モード (特に制御なし)
         '''
         self.studio_mode = 0
+        if str(grasp_mode.value) == 'without_grasp':
+            self.studio_mode = 3      
         
         # ポットが回転中かどうか取得
         self.is_rotation = 0
         
         # 収穫用データが更新されなくなったカウント
         self.not_harvest_count = 0
+        self.previous_data_len = 0
 
 
 
@@ -82,7 +85,7 @@ class FruitDataProcessor(Node):
             self.msg = FruitData()
             # 新規果実が奥すぎないかチェック
             for i in range(len(msg.x)):
-                if msg.x[i] < 0.8:
+                if msg.x[i] < 0.8 and msg.x[i] > 0.3:
                     self.msg.x.append(msg.x[i])
                     self.msg.y.append(msg.y[i])
                     self.msg.z.append(msg.z[i])
@@ -353,11 +356,11 @@ class FruitDataProcessor(Node):
         self.harvest_list = FruitDataList()
 
         # 実際に収穫を行う果実の情報を出力
-        for i in range(len(self.harvest_x)):
-            self.harvest_list.x.append(self.harvest_x[i])
-            self.harvest_list.y.append(self.harvest_y[i])
-            self.harvest_list.z.append(self.harvest_z[i])
-            self.harvest_list.radius.append(self.harvest_radius[i])
+        for i in range(len(self.harvest.x)):
+            self.harvest_list.x.append(self.harvest.x[i])
+            self.harvest_list.y.append(self.harvest.y[i])
+            self.harvest_list.z.append(self.harvest.z[i])
+            self.harvest_list.radius.append(self.harvest.radius[i])
             # self.get_logger().info("detect_number[{}]: {}".format(i, self.detect_number[i]))
 
         self.harvest_list_publisher_.publish(self.harvest_list)
