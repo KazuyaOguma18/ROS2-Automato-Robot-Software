@@ -231,7 +231,7 @@ class FruitDataProcessor(Node):
         a = 1
         l = []
         for i in range(len(self.x)):
-            l.append([abs(c*self.z[i] - a*self.y[i])/math.sqrt(a**2+c**2), int(i)])
+            l.append([abs(c*self.z[i] + a*self.x[i])/math.sqrt(a**2+c**2), int(i)])
 
         l = sorted(l)
         sorted_x = list(range(len(self.x)))
