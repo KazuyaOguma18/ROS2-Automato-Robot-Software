@@ -140,10 +140,16 @@ class TomatoDetector(Node):
 
     def rs_depth_info_callback(self, cameraInfo):
         try:
-            if self.rs_intrinsics:
+            if self.intrinsics:
                 return
 
             self.intrinsics = Intrinsics()
+            self.intrinsics.width = cameraInfo.width
+            self.intrinsics.height = cameraInfo.height
+            self.intrinsics.ppx = cameraInfo.k[2]
+            self.intrinsics.ppy = cameraInfo.k[5]
+            self.intrinsics.fx = cameraInfo.k[0]
+            self.intrinsics.fy = cameraInfo.k[4]
             # ここから制作
             self.rs_intrinsics = rs2.intrinsics()
             self.rs_intrinsics.width = cameraInfo.width
@@ -152,11 +158,11 @@ class TomatoDetector(Node):
             self.rs_intrinsics.ppy = cameraInfo.k[5]
             self.rs_intrinsics.fx = cameraInfo.k[0]
             self.rs_intrinsics.fy = cameraInfo.k[4]
-            if cameraInfo.distortion_model == 'plumb_bob':
-                self.rs_intrinsics.model = rs2.distortion.brown_conrady
-            elif cameraInfo.distortion_model == 'equidistant':
-                self.rs_intrinsics.model = rs2.distortion.kannala_brandt4
-            self.rs_intrinsics.coeffs = [i for i in cameraInfo.d]
+            # if cameraInfo.distortion_model == 'plumb_bob':
+            #     self.rs_intrinsics.model = rs2.distortion.brown_conrady
+            # elif cameraInfo.distortion_model == 'equidistant':
+            #     self.rs_intrinsics.model = rs2.distortion.kannala_brandt4
+            # self.rs_intrinsics.coeffs = [i for i in cameraInfo.d]
         
         except CvBridgeError as e:
             print(e)
