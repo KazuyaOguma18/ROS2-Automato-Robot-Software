@@ -10,11 +10,20 @@ import numpy as np
 import cv2
 import math
 
+class Intrinsics:
+    def __init__(self):
+        self.width = None
+        self.height = None
+        self.ppx = None
+        self.ppy = None
+        self.fx = None
+        self.fy = None
+
 def get_depth_at_pixel(depth_frame, pixel_x, pixel_y):
     return depth_frame.as_depth_frame().get_distance(round(pixel_x), round(pixel_y))
 
 
-def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_depth, mode):
+def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, mode, intrinsics: Intrinsics):
     
     '''
    if intrinsics:
@@ -28,20 +37,22 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, sum_dept
         Y_1 = (result1[1] + result2[1]) / 2
         Y_2 = (result3[1] + result4[1]) / 2
     '''
-
+    if intrinsics:
+        hfov = 2*math.atan(intrinsics.width/(2*intrinsics.fx))
+        vfov = 2*math.atan(intrinsics.height/(2*intrinsics.fy))
 
     if mode == "rs":
-        theta_x_1 = math.atan(x_1*math.tan(math.radians(69.4/2)))
-        theta_x_2 = math.atan(x_2*math.tan(math.radians(69.4/2)))
-        theta_y_1 = math.atan(y_1*math.tan(math.radians(42.5/2)))
-        theta_y_2 = math.atan(y_2*math.tan(math.radians(42.5/2)))
+        theta_x_1 = math.atan(x_1*math.tan(hfov/2))
+        theta_x_2 = math.atan(x_2*math.tan(hfov/2))
+        theta_y_1 = math.atan(y_1*math.tan(vfov/2))
+        theta_y_2 = math.atan(y_2*math.tan(vfov/2))
     elif mode == "azure":
-        theta_x0 = math.atan(1/3* math.tan(90/2))
+        theta_x0 = math.atan(1/3* math.tan(hfov/2))
         
         theta_x_1 = math.atan(x_1*math.tan(theta_x0))
         theta_x_2 = math.atan(x_2*math.tan(theta_x0))
-        theta_y_1 = math.atan(y_1*math.tan(math.radians(59/2)))
-        theta_y_2 = math.atan(y_2*math.tan(math.radians(59/2)))
+        theta_y_1 = math.atan(y_1*math.tan(vfov/2))
+        theta_y_2 = math.atan(y_2*math.tan(vfov/2))
                 
     X_1 = int(depth* math.tan(theta_x_1) )
     X_2 = int(depth* math.tan(theta_x_2) )

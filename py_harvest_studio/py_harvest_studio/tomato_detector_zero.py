@@ -38,6 +38,14 @@ from py_harvest_studio.object_detection.utils import realsense_depth_distance as
 from py_harvest_studio.object_detection.utils import focuspoint
 import message_filters
 
+class Intrinsics:
+    def __init__(self):
+        self.width = None
+        self.height = None
+        self.ppx = None
+        self.ppy = None
+        self.fx = None
+        self.fy = None
 
 
 class TomatoDetector(Node):
@@ -63,7 +71,7 @@ class TomatoDetector(Node):
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
             rs_color_subscriber = message_filters.Subscriber(self, Image, '/rs_color/image_com', **{'qos_profile': video_qos})
             rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
-            self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.rs_depth_info_callback, qos_profile_sensor_data)
+            self.sub_rs_info = self.create_subscription(CameraInfo, '/camera/depth/camera_info', self.depth_info_callback, qos_profile_sensor_data)
             self.rs_intrinsics = None
             rs_ts = message_filters.ApproximateTimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size, delay)
             rs_ts.registerCallback(self.rs_image_callback)
@@ -82,6 +90,7 @@ class TomatoDetector(Node):
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
             azure_color_subscriber = message_filters.Subscriber(self, Image, '/azure/rgb/image_raw', **{'qos_profile': video_qos})
             azure_depth_subscriber = message_filters.Subscriber(self, Image, '/azure/depth_to_rgb/image_raw', **{'qos_profile': video_qos})
+            sub_azure_info = self.create_subscription(CameraInfo, '/azure/depth_to_rgb/camera_info', self.depth_info_callback, qos_profile_sensor_data)
             azure_ts = message_filters.ApproximateTimeSynchronizer([azure_color_subscriber, azure_depth_subscriber], queue_size, delay)
             azure_ts.registerCallback(self.azure_image_callback)
             #azure kinectの解像度指定
@@ -120,25 +129,20 @@ class TomatoDetector(Node):
         # self.azure_color_image = np.zeros(720, 1280)
         # self.azure_depth_image = np.zeros(720, 1280)
 
-    def rs_depth_info_callback(self, cameraInfo):
+    def depth_info_callback(self, cameraInfo):
         try:
-            if self.rs_intrinsics:
+            if self.intrinsics:
                 return
 
-            self.rs_intrinsics = rs2.intrinsics()
-            self.rs_intrinsics.width = cameraInfo.width
-            self.rs_intrinsics.height = cameraInfo.height
-            self.rs_intrinsics.ppx = cameraInfo.k[2]
-            self.rs_intrinsics.ppy = cameraInfo.k[5]
-            self.rs_intrinsics.fx = cameraInfo.k[0]
-            self.rs_intrinsics.fy = cameraInfo.k[4]
-            if cameraInfo.distortion_model == 'plumb_bob':
-                self.rs_intrinsics.model = rs2.distortion.brown_conrady
-            elif cameraInfo.distortion_model == 'equidistant':
-                self.rs_intrinsics.model = rs2.distortion.kannala_brandt4
-            self.rs_intrinsics.coeffs = [i for i in cameraInfo.d]
+            self.intrinsics = Intrinsics()
+            self.intrinsics.width = cameraInfo.width
+            self.intrinsics.height = cameraInfo.height
+            self.intrinsics.ppx = cameraInfo.k[2]
+            self.intrinsics.ppy = cameraInfo.k[5]
+            self.intrinsics.fx = cameraInfo.k[0]
+            self.intrinsics.fy = cameraInfo.k[4]
         
-        except CvBridgeError as e:
+        except Exception as e:
             print(e)
             return
 
@@ -368,7 +372,7 @@ class TomatoDetector(Node):
             if names_show[k] == 'tomato':
                 if len(max_depth) > i:
                     pixel_x_left, pixel_x_right, pixel_y_up, pixel_y_low  = focuspoint.calculate_FocusPoint(k ,boxes ,0.5, 0.5 ,1, 2)
-                    X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, sum_depth[k], mode)
+                    X_meter, Y_meter, Z_meter, radius = rs_dis.convert_depth_pixel_to_metric_coordinate(max_depth[i], pixel_x_left, pixel_x_right ,pixel_y_up, pixel_y_low, mode, self.intrinsics)
                     Position_X.append(float(X_meter))
                     Position_Y.append(float(Y_meter))
                     Position_Z.append(float(Z_meter))
