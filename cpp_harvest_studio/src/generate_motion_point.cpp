@@ -234,6 +234,20 @@ int main(int argc, char * argv[]){
 
         try_count = 0;
 
+        // 初期姿勢
+        joint_values = move_group.getCurrentJointValues();
+        joint_values[0] = to_radians(-38.54);
+        joint_values[1] = to_radians(-43.16);
+        joint_values[2] = to_radians(-22.65);
+        joint_values[3] = to_radians(65.80);
+        joint_values[4] = to_radians(-38.53);
+        if (move_group.setJointValueTarget(joint_values)){
+            while(!move_group.move()){
+                continue;
+            }
+        }        
+
+
         // 果実位置情報の呼び出し
         
         while (!arm_client->wait_for_service(1s)) {
@@ -241,7 +255,7 @@ int main(int argc, char * argv[]){
               RCLCPP_ERROR(rclcpp::get_logger("GMP"), "Interrupted while waiting for the service. Exiting.");
               return 0;
             }
-            RCLCPP_INFO(rclcpp::get_logger("GMP"), "service not available, waiting again...");
+            RCLCPP_INFO(rclcpp::get_logger("GMP"), "fruit service not available, waiting again...");
         }
 
         auto result = arm_client->async_send_request(arm_request, std::bind(&arm_callback_response, std::placeholders::_1));
