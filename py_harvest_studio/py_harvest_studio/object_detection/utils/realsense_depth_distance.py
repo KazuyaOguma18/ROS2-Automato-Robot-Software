@@ -37,7 +37,7 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, mode, in
         Y_1 = (result1[1] + result2[1]) / 2
         Y_2 = (result3[1] + result4[1]) / 2
     '''
-    if intrinsics:
+    if intrinsics.width != None:
         hfov = 2*math.atan(intrinsics.width/(2*intrinsics.fx))
         vfov = 2*math.atan(intrinsics.height/(2*intrinsics.fy))
 

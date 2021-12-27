@@ -150,6 +150,9 @@ def launch_setup(context, *args, **kwargs):
     fruit_data_processor_node = Node(
         package='py_harvest_studio',
         executable='fruit_data_processor',
+        parameters=[
+            {'grasp_mode': 'with_grasp'}
+        ],
     )
 
     hand_ros2serial_node = Node(
@@ -191,7 +194,7 @@ def launch_setup(context, *args, **kwargs):
         tomato_detector_launch_include,
         generate_motion_point_node,
         fruit_data_processor_node,
-        hand_ros2serial_node,
+        # hand_ros2serial_node,
         point_cloud_updater_node,
         camera_launch_include,
         harvest_studio_control_node,

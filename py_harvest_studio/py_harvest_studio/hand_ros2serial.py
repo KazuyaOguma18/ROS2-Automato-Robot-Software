@@ -9,6 +9,7 @@ from rclpy.exceptions import ParameterNotDeclaredException
 from rcl_interfaces.msg import ParameterType
 
 from harvest_studio_msg.srv import EndEffectorControl
+from std_msgs.msg import Int32MultiArray
 
 # subscribe from generate_motion_point
 # substitute global list from ros message
@@ -27,9 +28,10 @@ class HandRos2Serial(Node):
 
         elif str(self.control_mode.value) == 'real':
             self.srv = self.create_service(EndEffectorControl, 'hand_data', self.hand_data_real_callback)
-
-            self.timer_ = self.create_timer(0.1, self.timer_callback)
+            self.serial_publisher = self.create_publisher(Int32MultiArray, 'hand_current_status', 10)
+            self.timer_ = self.create_timer(0.01, self.timer_callback)
             self.ser = serial.Serial("/dev/ttyUSB-XBee", 115200, timeout=0.1)
+            
 
         self.goal_array = [0,0,0]
         self.current_array = [0,0,0]
@@ -51,6 +53,8 @@ class HandRos2Serial(Node):
         self.goal_array[0] = request.hand
         self.goal_array[1] = request.cup
         self.goal_array[2] = request.pump
+        
+        print(self.goal_array)
 
         response.status = True
 
@@ -74,8 +78,11 @@ class HandRos2Serial(Node):
         return response
 
     # 周期性の制御
-    def timer_callback(self):
-        print("reading...")
+    def timer_callback(self):        
+        pub_array = [int(s) for s in self.current_array]
+        pub_data = Int32MultiArray(data = pub_array)
+        self.serial_publisher.publish(pub_data)
+        # print("reading...")
         
         try:
             line = self.ser.readline().strip().decode('utf-8')
@@ -96,9 +103,11 @@ class HandRos2Serial(Node):
                 # self.ser.write("No data\n")
                 self.i = self.i+1
                 self.j = 0     
-                
+            
         except Exception as err:
             print("exception has occured: {}".format(err))      
+            
+
 
 
     # 二つのモータでどちらかが指定角度以上の変化があった場合True

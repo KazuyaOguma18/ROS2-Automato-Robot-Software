@@ -73,8 +73,7 @@ class TomatoDetector(Node):
             video_qos.reliability = qos.QoSReliabilityPolicy.BEST_EFFORT
             rs_color_subscriber = message_filters.Subscriber(self, Image, '/rs_color/image_com', **{'qos_profile': video_qos})
             rs_depth_subscriber = message_filters.Subscriber(self, Image, '/camera/aligned_depth_to_color/image_raw', **{'qos_profile': video_qos})
-            sub_rs_info = self.create_subscription(CameraInfo, '/camera/alighed_depth_to_color/camera_info', self.depth_info_callback, qos_profile_sensor_data)
-            self.rs_intrinsics = None
+            sub_rs_info = self.create_subscription(CameraInfo, '/camera/aligned_depth_to_color/camera_info', self.depth_info_callback, qos_profile_sensor_data)
             rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
             rs_ts.registerCallback(self.rs_image_callback)         
             #realsenseの解像度指定
@@ -107,7 +106,7 @@ class TomatoDetector(Node):
             
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
                
-            
+        self.intrinsics = Intrinsics()    
         self.publisher_ = self.create_publisher(FruitDataList, '/fruit_detect_list', 10)
         pub_video_qos = qos.QoSProfile(depth=10)
         pub_video_qos = qos.QoSReliabilityPolicy.BEST_EFFORT
@@ -143,10 +142,9 @@ class TomatoDetector(Node):
 
     def depth_info_callback(self, cameraInfo):
         try:
-            if self.intrinsics:
+            if self.intrinsics.fx != None:
                 return
 
-            self.intrinsics = Intrinsics()
             self.intrinsics.width = cameraInfo.width
             self.intrinsics.height = cameraInfo.height
             self.intrinsics.ppx = cameraInfo.k[2]
@@ -213,7 +211,7 @@ class TomatoDetector(Node):
         
 
         # 果実の位置検出
-        if self.intrinsics == None:
+        if self.intrinsics.fx == None:
             return
         
         x, y, z, radius = self.detect_fruits(mode)
@@ -309,7 +307,6 @@ class TomatoDetector(Node):
         if mode == "rs":
             color_image = self.rs_color_image
             depth_image = self.rs_depth_image
-            intrinsics = self.rs_intrinsics
             min_scale = 0.5
             max_scale = 1.5
         
