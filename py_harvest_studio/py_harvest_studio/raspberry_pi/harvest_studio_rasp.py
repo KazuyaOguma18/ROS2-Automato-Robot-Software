@@ -66,21 +66,26 @@ class HarvestStudioRasp(Node):
             if self.studio_control_signal == 0:
                 GPIO.output(self.grasp_pin, True)
                 GPIO.output(self.rotate_pin, False)
+                self.studio_control_signal = -1
                 
         elif self.studio_mode == 4:
             if self.studio_control_signal == 1:
                 GPIO.output(self.grasp_pin, True)
-                GPIO.output(self.rotate_pin, True)        
+                GPIO.output(self.rotate_pin, True)
+                self.studio_control_signal = -1        
                 
 
         elif self.studio_mode == 3:
             if self.studio_control_signal == 2:
                 GPIO.output(self.grasp_pin, False)
                 GPIO.output(self.rotate_pin, True)
-                    
+                time.sleep(0.01)
+                GPIO.output(self.grasp_pin, False)
+                GPIO.output(self.rotate_pin, False)                    
             else:
                 GPIO.output(self.grasp_pin, False)
-                GPIO.output(self.rotate_pin, False) 
+                GPIO.output(self.rotate_pin, False)
+                self.studio_control_signal = -1 
                 
         else:
             pass          
@@ -97,7 +102,7 @@ class HarvestStudioRasp(Node):
 
                 # print(str(self.current_data))
                 self.right_joint_state = math.radians(self.current_data[0])
-                self.left_joint_state = math.radians(self.current_data[1])
+                self.left_joint_state = (-1)*math.radians(self.current_data[1])
                 self.studio_mode = int(self.current_data[2])
                 self.rotate_mode = int(self.current_data[3])
                 self.is_rotation = int(self.current_data[4])

@@ -10,6 +10,7 @@
 #include <rclcpp/qos.hpp>
 
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int16.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/int16_multi_array.hpp>
@@ -21,6 +22,9 @@
 
 #define HARVEST_COMPLETED 0
 #define HARVEST_RUNNNING 1
+
+#define IS_HARVESTING true
+#define NOT_HARVESTING false
 
 using std::placeholders::_1;
 
@@ -46,33 +50,36 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
 
     // ポットの回転モードに入ったとき、カメラ角度の動作を開始    
     else if (studio_mode == 3){
-
-        // ポットの回転モードが変化したらカメラ位置を初期化する
-        if (previous_rotate_mode != pot_rotate_mode){
-            angle_value = to_radian(-30.0);
-        }
-
-        if (harvest_completed(rs_loop_complete_count, azure_loop_complete_count, status->data) == HARVEST_COMPLETED){
-
-            jointstate.header.stamp = rclcpp::Clock().now();
-            jointstate.name.push_back("azure_camera_joint");
-            jointstate.position.push_back(angle_value);
-            jointstate_pub->publish(jointstate);
-
-            // カメラ角を15度づつ回転
-            if (angle_value < 0.0){
-                angle_value += to_radian(15.0);
-            }
-            else{
+        if (robotarm_hand_status == NOT_HARVESTING){
+            // ポットの回転モードが変化したらカメラ位置を初期化する
+            if (previous_rotate_mode != pot_rotate_mode){
                 angle_value = to_radian(-30.0);
-                rotate_trigger = 1;
             }
-            
-            // カメラ角の制御が完了したら、ポット回転信号を送信する
-            if (rotate_trigger == 1){
-                rotate_trigger = 0;
-                studio_signal.data = STUDIO_RORATE;
-                studio_control_signal_pub->publish(studio_signal);
+
+            if (harvest_completed(rs_loop_complete_count, azure_loop_complete_count, status->data) == HARVEST_COMPLETED){
+                if (is_rotating == 0){
+                    jointstate.header.stamp = rclcpp::Clock().now();
+                    jointstate.name.push_back("azure_camera_joint");
+                    jointstate.position.push_back(angle_value);
+                    jointstate_pub->publish(jointstate);
+
+                    // カメラ角を15度づつ回転
+                    if (angle_value < 0.0){
+                        angle_value += to_radian(15.0);
+                    }
+                    else{
+                        angle_value = to_radian(-30.0);
+                        rotate_trigger = 1;
+                        is_rotating = 1;
+                    }
+                    
+                    // カメラ角の制御が完了したら、ポット回転信号を送信する
+                    if (rotate_trigger == 1){
+                        rotate_trigger = 0;
+                        studio_signal.data = STUDIO_RORATE;
+                        studio_control_signal_pub->publish(studio_signal);
+                    }
+                }
             }
         }
     }
@@ -129,13 +136,19 @@ void HarvestStudioControl::azure_loop_complete_callback(const std_msgs::msg::Emp
     azure_loop_complete_count++;
 }
 
-// 収穫動作が完了したかどうか判定
+void HarvestStudioControl::robotarm_hand_status_callback(const std_msgs::msg::Bool::SharedPtr status){
+    robotarm_hand_status = status->data;
+}
+
+// 収穫動作(現在収穫可能な果実をすべて収穫)が完了したかどうか判定
 // 両方の物体検出を２ループ以上行った上で果実の個数が０個だったら収穫完了と判定
-int HarvestStudioControl::harvest_completed(int rs_loop_comlete_count,
-                                            int azure_loop_complete_count,
+int HarvestStudioControl::harvest_completed(int rs_loop_count,
+                                            int azure_loop_count,
                                             int detect_status){
-    if (rs_loop_comlete_count > 1 && azure_loop_complete_count > 1){
+    if (rs_loop_count > 1 && azure_loop_count > 1){
         if (detect_status == 0){
+            rs_loop_complete_count = 0;
+            azure_loop_complete_count = 0;
             return HARVEST_COMPLETED;
         }
     }
@@ -165,14 +178,19 @@ HarvestStudioControl::HarvestStudioControl(
         std::bind(&HarvestStudioControl::studio_mode_callback, this, _1));
 
     rs_loop_complete_sub = this->create_subscription<std_msgs::msg::Empty>(
-        "rs_loop_comlete",
+        "rs_loop_complete",
         rclcpp::QoS(10),
         std::bind(&HarvestStudioControl::rs_loop_complete_callback, this , _1));
 
     azure_loop_complete_sub = this->create_subscription<std_msgs::msg::Empty>(
-        "azure_loop_comlete",
+        "azure_loop_complete",
         rclcpp::QoS(10),
         std::bind(&HarvestStudioControl::azure_loop_complete_callback, this, _1));
+
+    robotarm_hand_status_sub = this->create_subscription<std_msgs::msg::Bool>(
+        "robotarm_hand_status",
+        rclcpp::QoS(10),
+        std::bind(&HarvestStudioControl::robotarm_hand_status_callback, this, _1));
 
     angle_value = to_radian(-30.0);    
 }

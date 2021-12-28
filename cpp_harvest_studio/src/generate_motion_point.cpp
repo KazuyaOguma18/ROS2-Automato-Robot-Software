@@ -8,6 +8,7 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include "harvest_studio_msg/srv/fruit_position_data.hpp"
@@ -25,6 +26,8 @@
 #include <cmath>
 
 #define TRY_MOTION_GENERATE_COUNT 5
+#define IS_HARVESTING true
+#define NOT_HARVESTING false
 
 using namespace std::chrono_literals;
 
@@ -199,9 +202,15 @@ int main(int argc, char * argv[]){
     
     std_msgs::msg::Empty fruit_target_command;
 
+    // 現在のロボットアームの動作状況の送信
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr robotarm_hand_status_pub = 
+        service_node->create_publisher<std_msgs::msg::Bool>("robotarm_hand_status", rclcpp::QoS(10));
 
-    move_group.setMaxVelocityScalingFactor(0.4);
-    move_group.setMaxAccelerationScalingFactor(0.4);
+    std_msgs::msg::Bool robotarm_hand_status;
+
+
+    move_group.setMaxVelocityScalingFactor(0.1);
+    move_group.setMaxAccelerationScalingFactor(0.1);
     move_group.setPlanningTime(0.5);
     auto joint_values = move_group.getCurrentJointValues();
     double GRIPPER_STATE1 = to_radians(-360);
@@ -213,6 +222,8 @@ int main(int argc, char * argv[]){
     std_msgs::msg::Float32MultiArray eef_data;
 
     // -----------------------initial pose--------------------------
+    robotarm_hand_status.data = IS_HARVESTING;
+    robotarm_hand_status_pub->publish(robotarm_hand_status);
     RCLCPP_INFO(rclcpp::get_logger("GMP"), "Pose Initialize");
     while (!move_group.setNamedTarget("hold-up")){
         continue;
@@ -220,6 +231,8 @@ int main(int argc, char * argv[]){
     while (!move_group.move()){
         continue;
     }
+    robotarm_hand_status.data = NOT_HARVESTING;
+    robotarm_hand_status_pub->publish(robotarm_hand_status);
     // -----------------------initial pose--------------------------
 
     double yaw;
@@ -235,6 +248,8 @@ int main(int argc, char * argv[]){
         try_count = 0;
 
         // 初期姿勢
+        robotarm_hand_status.data = IS_HARVESTING;
+        robotarm_hand_status_pub->publish(robotarm_hand_status);
         joint_values = move_group.getCurrentJointValues();
         joint_values[0] = to_radians(-38.54);
         joint_values[1] = to_radians(-43.16);
@@ -245,7 +260,9 @@ int main(int argc, char * argv[]){
             while(!move_group.move()){
                 continue;
             }
-        }        
+        }
+        robotarm_hand_status.data = NOT_HARVESTING;
+        robotarm_hand_status_pub->publish(robotarm_hand_status);        
 
 
         // 果実位置情報の呼び出し
@@ -283,6 +300,9 @@ int main(int argc, char * argv[]){
         }
         
         else{
+            robotarm_hand_status.data = IS_HARVESTING;
+            robotarm_hand_status_pub->publish(robotarm_hand_status);
+
             do  {
                 // アームの動作生成
                 RCLCPP_INFO(rclcpp::get_logger("GMP"), "Generating robot arm motion");

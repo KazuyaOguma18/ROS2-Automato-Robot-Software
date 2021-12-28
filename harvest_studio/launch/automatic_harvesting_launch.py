@@ -194,7 +194,7 @@ def launch_setup(context, *args, **kwargs):
         tomato_detector_launch_include,
         generate_motion_point_node,
         fruit_data_processor_node,
-        # hand_ros2serial_node,
+        hand_ros2serial_node,
         point_cloud_updater_node,
         camera_launch_include,
         harvest_studio_control_node,

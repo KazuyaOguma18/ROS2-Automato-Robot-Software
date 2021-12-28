@@ -1,10 +1,14 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/qos.hpp>
 
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int16.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/int16_multi_array.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+
+#define IS_HARVESTING true
+#define NOT_HARVESTING false
 
 double to_radian(double degree);
 
@@ -17,6 +21,7 @@ protected:
     int is_rotating = 0;
     int rs_loop_complete_count = 0;
     int azure_loop_complete_count = 0;
+    bool robotarm_hand_status = IS_HARVESTING;
 
 
 private:
@@ -31,6 +36,8 @@ private:
     rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr detect_status_sub;
     // 把持回転機構の現在の状態を受信
     rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr studio_mode_sub;
+    // ロボットアーム等の動作状況を取得
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr robotarm_hand_status_sub;
 
 
     void detect_status_callback(const std_msgs::msg::Int16::SharedPtr status);
@@ -40,6 +47,7 @@ private:
     int harvest_completed(int rs_loop_comlete_count,
                           int azure_loop_complete_count,
                           int detect_status);
+    void robotarm_hand_status_callback(const std_msgs::msg::Bool::SharedPtr status);
 
 public:
     HarvestStudioControl(
