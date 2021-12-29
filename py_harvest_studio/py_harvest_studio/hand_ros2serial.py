@@ -50,8 +50,8 @@ class HandRos2Serial(Node):
 
     # ハンドのゴール更新＆現在の状況を返す
     def hand_data_fake_callback(self, request, response):
-        self.goal_array[0] = request.hand
-        self.goal_array[1] = request.cup
+        self.goal_array[0] = request.cup
+        self.goal_array[1] = request.hand
         self.goal_array[2] = request.pump
         
         print(self.goal_array)
@@ -61,8 +61,8 @@ class HandRos2Serial(Node):
         return response
               
     def hand_data_real_callback(self, request, response):
-        self.goal_array[0] = request.hand
-        self.goal_array[1] = request.cup
+        self.goal_array[0] = request.cup
+        self.goal_array[1] = request.hand
         self.goal_array[2] = request.pump
 
         # 角度変化が0.1度未満になったらTrueを返す
@@ -71,9 +71,9 @@ class HandRos2Serial(Node):
         for i in range(len(self.current_array)):
             self.previous_array[i] = self.current_array[i]
             
-        senddata = bytes(str(self.goal_array[0]) + "," + str(self.goal_array[1]) + "," + str(self.goal_array[2]), encoding='utf-8')
-        
-        self.ser.write(senddata) 
+        if response.status:
+            senddata = bytes(str(self.goal_array[0]) + "," + str(self.goal_array[1]) + "," + str(self.goal_array[2]), encoding='utf-8')
+            self.ser.write(senddata) 
 
         return response
 

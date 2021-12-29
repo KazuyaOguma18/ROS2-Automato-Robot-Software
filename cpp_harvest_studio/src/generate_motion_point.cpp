@@ -107,8 +107,8 @@ void hand_service(rclcpp::Client<harvest_studio_msg::srv::EndEffectorControl>::S
         RCLCPP_INFO(rclcpp::get_logger("GMP"), "hand service not available, waiting again...");
     }
 
-    hand_request->hand = eef_data[0];
-    hand_request->cup = eef_data[1];
+    hand_request->hand = eef_data[1];
+    hand_request->cup = eef_data[0];
     hand_request->pump = eef_data[2];
     
     while (!hand_status){
@@ -209,7 +209,7 @@ int main(int argc, char * argv[]){
     std_msgs::msg::Bool robotarm_hand_status;
 
 
-    move_group.setMaxVelocityScalingFactor(0.1);
+    move_group.setMaxVelocityScalingFactor(0.5);
     move_group.setMaxAccelerationScalingFactor(0.1);
     move_group.setPlanningTime(0.5);
     auto joint_values = move_group.getCurrentJointValues();
@@ -359,7 +359,12 @@ int main(int argc, char * argv[]){
                     try_count++;
                     continue;
                 }
-            } while (!move_group.move() && try_count <= TRY_MOTION_GENERATE_COUNT);
+
+                if (try_count < TRY_MOTION_GENERATE_COUNT){
+                    break;
+                }
+                
+            } while (!move_group.move());
             
             // 5回以上動作生成失敗したら新しい果実のデータを取りに行く
             if(try_count > TRY_MOTION_GENERATE_COUNT){
@@ -370,8 +375,8 @@ int main(int argc, char * argv[]){
             // ハンドの機動→キャッチまで
             // ハンドを開く
             // 吸引軸伸ばす
-            hand_data[0] = 230.0;
-            hand_data[1] = 210.0;
+            hand_data[0] = 210.0;
+            hand_data[1] = 230.0;
             hand_data[2] = 0.0;
             hand_service(hand_client, hand_request, hand_data);
 
@@ -390,8 +395,8 @@ int main(int argc, char * argv[]){
             rclcpp::sleep_for(1s);
 
             // ポンプ停止
-            create_eef_motion(hand_data, radius, 0.0, "close");
-            hand_service(hand_client, hand_request, hand_data);
+            // create_eef_motion(hand_data, radius, 0.0, "close");
+            // hand_service(hand_client, hand_request, hand_data);
 
             // オブジェクトの把持
             move_group.attachObject("tomato");

@@ -13,7 +13,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int16.hpp>
 #include <std_msgs/msg/empty.hpp>
-#include <std_msgs/msg/int16_multi_array.hpp>
+#include <std_msgs/msg/int32_multi_array.hpp>
 #include "cpp_harvest_studio/harvest_studio_control.hpp"
 
 #define STUDIO_SETUP 0
@@ -101,7 +101,7 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
 }
 
 // 把持回転機構の現在の動作状況を取得
-void HarvestStudioControl::studio_mode_callback(const std_msgs::msg::Int16MultiArray::SharedPtr mode_array){
+void HarvestStudioControl::studio_mode_callback(const std_msgs::msg::Int32MultiArray::SharedPtr mode_array){
     static int previous_rotate_mode = 0;
     static int start_rotating = 0;
     // 動作モード
@@ -172,7 +172,7 @@ HarvestStudioControl::HarvestStudioControl(
         rclcpp::QoS(10),
         std::bind(&HarvestStudioControl::detect_status_callback, this, _1));
 
-    studio_mode_sub = this->create_subscription<std_msgs::msg::Int16MultiArray>(
+    studio_mode_sub = this->create_subscription<std_msgs::msg::Int32MultiArray>(
         "studio_mode",
         rclcpp::QoS(10),
         std::bind(&HarvestStudioControl::studio_mode_callback, this, _1));

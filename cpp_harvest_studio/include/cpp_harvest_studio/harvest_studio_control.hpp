@@ -4,7 +4,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int16.hpp>
 #include <std_msgs/msg/empty.hpp>
-#include <std_msgs/msg/int16_multi_array.hpp>
+#include <std_msgs/msg/int32_multi_array.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
 #define IS_HARVESTING true
@@ -35,13 +35,13 @@ private:
     // 果実データ処理ノードが保持している果実のデータ個数を受信
     rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr detect_status_sub;
     // 把持回転機構の現在の状態を受信
-    rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr studio_mode_sub;
+    rclcpp::Subscription<std_msgs::msg::Int32MultiArray>::SharedPtr studio_mode_sub;
     // ロボットアーム等の動作状況を取得
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr robotarm_hand_status_sub;
 
 
     void detect_status_callback(const std_msgs::msg::Int16::SharedPtr status);
-    void studio_mode_callback(const std_msgs::msg::Int16MultiArray::SharedPtr mode_array);
+    void studio_mode_callback(const std_msgs::msg::Int32MultiArray::SharedPtr mode_array);
     void rs_loop_complete_callback(const std_msgs::msg::Empty::SharedPtr empty);
     void azure_loop_complete_callback(const std_msgs::msg::Empty::SharedPtr empty);
     int harvest_completed(int rs_loop_comlete_count,

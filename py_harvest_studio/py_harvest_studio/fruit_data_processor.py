@@ -4,7 +4,7 @@ from rclpy.node import Node
 
 from std_msgs.msg import Bool
 from std_msgs.msg import Int16
-from std_msgs.msg import Int16MultiArray
+from std_msgs.msg import Int32MultiArray
 from harvest_studio_msg.msg import FruitDataList
 from harvest_studio_msg.srv import FruitPositionData
 
@@ -32,7 +32,7 @@ class FruitDataProcessor(Node):
         ## tomato_detectorから検出された果実位置を受信
         self.list_subscriber_ = self.create_subscription(FruitDataList , 'fruit_detect_list', self.fruit_detect_list_callback, 10)
         ## 現在の把持回転機構のモードを受信
-        self.studio_mode_subscriber_ = self.create_subscription(Int16MultiArray, 'studio_mode', self.studio_mode_callback, 10)
+        self.studio_mode_subscriber_ = self.create_subscription(Int32MultiArray, 'studio_mode', self.studio_mode_callback, 10)
 
         self.timer = self.create_timer(0.1, self.timer_callback)
 
@@ -272,9 +272,9 @@ class FruitDataProcessor(Node):
         if request.order == True and len(self.harvest.x) > 0:
             harvest_index = 0
 
-            # 20 b回以上検出された信頼性のある果実から収穫
+            # 10回以上検出された信頼性のある果実から収穫
             for j in range(len(self.detect_number)):
-                if self.detect_number[j] > 20:
+                if self.detect_number[j] > 10:
                     harvest_index = j
                     zero_data = True
                     break

@@ -7,7 +7,7 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import Int16
-from std_msgs.msg import Int16MultiArray
+from std_msgs.msg import Int32MultiArray
 from sensor_msgs.msg import JointState
 
 import RPi.GPIO as GPIO
@@ -21,7 +21,7 @@ class HarvestStudioRasp(Node):
         self.fruit_status_subscriber = self.create_subscription(Int16, 'fruit_detect_status', self.fruit_status_callback, 10)
         self.studio_control_signal_subscriber = self.create_subscription(Int16, 'studio_control_signal', self.studio_control_signal_callback, 10)
         self.jointstate_publisher = self.create_publisher(JointState, 'arm_joint_state', 10)
-        self.mode_publisher = self.create_publisher(Int16MultiArray, 'studio_mode', 10)
+        self.mode_publisher = self.create_publisher(Int32MultiArray, 'studio_mode', 10)
         self.timer_ = self.create_timer(0.1, self.timer_callback)
         self.serial_timer_ = self.create_timer(0.01, self.serial_timer_callback)
         self.studio_mode = 0
@@ -131,7 +131,7 @@ class HarvestStudioRasp(Node):
         mode_array.append(self.rotate_mode)
         mode_array.append(self.is_rotation)
         
-        mode_pub = Int16MultiArray(data = mode_array)
+        mode_pub = Int32MultiArray(data = mode_array)
         self.mode_publisher.publish(mode_pub)
         
         print("now rotating: " + str(self.is_rotation))
