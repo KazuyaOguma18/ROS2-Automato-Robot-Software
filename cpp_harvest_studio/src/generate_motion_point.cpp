@@ -269,7 +269,8 @@ int main(int argc, char * argv[]){
             initialize = false; 
         }
         
-       
+        robotarm_hand_status.data = NOT_HARVESTING;
+        robotarm_hand_status_pub->publish(robotarm_hand_status);       
 
 
         // 果実位置情報の呼び出し
@@ -366,7 +367,7 @@ int main(int argc, char * argv[]){
                     try_count++;
                 }
 
-                if (try_count > TRY_MOTION_GENERATE_COUNT){
+                if (try_count >= TRY_MOTION_GENERATE_COUNT){
                     break;
                 }
                 
@@ -376,7 +377,7 @@ int main(int argc, char * argv[]){
             if(try_count > TRY_MOTION_GENERATE_COUNT){
                 continue;
             }
-            else {move_group.execute(plan);}
+            else {while(!move_group.execute(plan)){move_group.plan(plan);}}
 
             initialize = true;
 
@@ -391,17 +392,24 @@ int main(int argc, char * argv[]){
             // ポンプ駆動
             hand_data[2] = 1.0;
             hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(1s);
+
+            hand_data[0] = 120.0;
+            hand_service(hand_client, hand_request, hand_data);
+            rclcpp::sleep_for(100ms);
+
+            hand_data[0] = 210.0;
+            hand_service(hand_client, hand_request, hand_data);
+            rclcpp::sleep_for(500ms);
 
             // 吸引軸の動作量生成
             create_eef_motion(hand_data, radius, 1.0, "open");
             hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(1s);
+            rclcpp::sleep_for(500ms);
 
             // キャッチ
             create_eef_motion(hand_data, radius, 1.0, "close");
             hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(1s);
+            rclcpp::sleep_for(500ms);
 
             // ポンプ停止
             // create_eef_motion(hand_data, radius, 0.0, "close");

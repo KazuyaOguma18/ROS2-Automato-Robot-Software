@@ -44,6 +44,7 @@ from py_harvest_studio.object_detection.utils import realsense_depth_distance as
 from py_harvest_studio.object_detection.utils import focuspoint
 import message_filters
 
+# カメラ情報のコンストラクタ
 class Intrinsics:
     def __init__(self):
         self.width = None

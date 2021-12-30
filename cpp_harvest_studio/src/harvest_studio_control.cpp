@@ -63,6 +63,13 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
                     jointstate.position.push_back(angle_value);
                     jointstate_pub->publish(jointstate);
 
+                    // カメラ角の制御が完了したら、ポット回転信号を送信する
+                    if (rotate_trigger == 1){
+                        rotate_trigger = 0;
+                        studio_signal.data = STUDIO_RORATE;
+                        studio_control_signal_pub->publish(studio_signal);
+                    }
+                    
                     // カメラ角を15度づつ回転
                     if (angle_value < 0.0){
                         angle_value += to_radian(15.0);
@@ -73,12 +80,7 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
                         is_rotating = 1;
                     }
                     
-                    // カメラ角の制御が完了したら、ポット回転信号を送信する
-                    if (rotate_trigger == 1){
-                        rotate_trigger = 0;
-                        studio_signal.data = STUDIO_RORATE;
-                        studio_control_signal_pub->publish(studio_signal);
-                    }
+
                 }
             }
         }
