@@ -34,8 +34,8 @@ class HandRos2Serial(Node):
             
 
         self.goal_array = [0,0,0]
-        self.current_array = [0,0,0]
-        self.previous_array = [0,0,0]
+        self.current_array = [0,0]
+        self.previous_array = [0,0]
 
         # シリアル通信が問題なくできてるか確認用
         self.i = 0
@@ -68,7 +68,7 @@ class HandRos2Serial(Node):
         # 角度変化が0.1度未満になったらTrueを返す
         response.status = self.calc_tolerance(0.1)
         
-        for i in range(len(self.current_array)):
+        for i in range(len(self.previous_array)):
             self.previous_array[i] = self.current_array[i]
             
         if response.status:
