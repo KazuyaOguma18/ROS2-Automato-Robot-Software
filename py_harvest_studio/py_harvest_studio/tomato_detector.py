@@ -181,25 +181,33 @@ class TomatoDetector(Node):
     # 各画像トピックのcallback#
     #  tfにより位置関係を取得し座標変換
     def rs_image_callback(self, color_msg, depth_msg):
-        self.rs_color_image = self.process_image(self.height_color, self.width_color, color_msg, "bgr8")
-        depth_image = self.process_image(self.height_depth, self.width_depth, depth_msg, "16UC1")
-        self.rs_depth_image = depth_image.astype(np.uint16)
-        # cv2.imshow("n_depth", self.rs_depth_image)
-        # self.get_logger().info(str(max(self.rs_depth_image)))
-        self.color_image_callback(mode="rs" ,child_frame="rs_tomato", camera_frame="camera_link")
+        if self.intrinsics.fx != None:
+            width = self.intrinsics.width * 0.1
+            height = self.intrinsics.height
+            color_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, color_msg, "bgr8")
+            self.rs_color_image = color_tmp[0:height, width:self.intrinsics.width-width]
+            depth_image = self.process_image(self.intrinsics.height, self.intrinsics.width, depth_msg, "16UC1")
+            depth_tmp = depth_image.astype(np.uint16)
+            self.rs_depth_image = depth_tmp[0:height, width:self.intrinsics.width-width]
+            # cv2.imshow("n_depth", self.rs_depth_image)
+            # self.get_logger().info(str(max(self.rs_depth_image)))
+            self.color_image_callback(mode="rs")
         
 
     def azure_image_callback(self, color_msg, depth_msg):
-        color_tmp  = self.process_image(1080, 1920, color_msg, "bgr8")
-        self.azure_color_image = color_tmp[0:1080, 640:1280]
-        depth_tmp = self.process_image(1080, 1920, depth_msg, "16UC1")
-        self.azure_depth_image = depth_tmp[0:1080, 640:1280]
-        self.color_image_callback(mode="azure", child_frame="azure_tomato", camera_frame="camera_base")
+        if self.intrinsics.fx != None:
+            width = self.intrinsics.width / 3
+            height = self.intrinsics.height
+            color_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, color_msg, "bgr8")
+            self.azure_color_image = color_tmp[0:height, width:self.intrinsics.width - width]
+            depth_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, depth_msg, "16UC1")
+            self.azure_depth_image = depth_tmp[0:height, self.intrinsics.width:self.intrinsics.width - width]
+            self.color_image_callback(mode="azure")
 
     def azure_depth_callback(self, msg):
         self.azure_depth_image = self.process_image(self.height_depth, self.width_depth, msg)
 
-    def color_image_callback(self, mode, child_frame, camera_frame):
+    def color_image_callback(self, mode):
         """
         from_frame_rel = self.rs_target_frame # world
         to_frame_rel = child_frame # fruit target
@@ -244,8 +252,8 @@ class TomatoDetector(Node):
         # self.publisher_.publish(pos_data)
         # self.get_logger().info("Publish detect fruits")
 
- 
         
+    # この部分のカメラフレームを変更してみる
     def transform_tomato_position(self, x, y, z, mode):
         if mode == 'rs':
             camera_frame = 'camera_link'
@@ -277,7 +285,7 @@ class TomatoDetector(Node):
                 "link_base",
                 camera_frame,
                 rclpy.time.Time(seconds=0), 
-                timeout=Duration(seconds=0.5))
+                timeout=Duration(seconds=0.1))
             
             # トマト座標をカメラ座標系からアーム座標系へ線形変換
             q0 = trans.transform.rotation.w
