@@ -15,7 +15,7 @@ protected:
 
 private:
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr pub_joint_state;
-    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_state;
+    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_xarm_joint_state;
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_dyna_joint_state;
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_arm_joint_state;
     rclcpp::TimerBase::SharedPtr timer;

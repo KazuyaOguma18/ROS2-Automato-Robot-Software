@@ -12,52 +12,52 @@ using namespace std::chrono_literals;
 
 void ChangeJointStates::timer_callback(){
     rejoint_state.header.stamp = rclcpp::Clock().now();
-    for(long unsigned int i=0; i < xarm_joint_states.name.size(); i++){
-        if(rejoint_state.name[i] == xarm_joint_states.name[i]){
-            if(rejoint_states.position.size() > 0){
-                rejoint_state.position[i] = xarm_joint_states.position[i];
+    for(long unsigned int i=0; i < xarm_joint_state.name.size(); i++){
+        if(rejoint_state.name[i] == xarm_joint_state.name[i]){
+            if(rejoint_state.position.size() > 0){
+                rejoint_state.position[i] = xarm_joint_state.position[i];
             }
-            if(rejoint_states.velocity.size() > 0){
-                rejoint_state.velocity[i] = xarm_joint_states.velocity[i];
+            if(rejoint_state.velocity.size() > 0){
+                rejoint_state.velocity[i] = xarm_joint_state.velocity[i];
             }
-            if(rejoint_states.effort.size() > 0){
-                rejoint_state.effort[i] = xarm_joint_states.effort[i];
+            if(rejoint_state.effort.size() > 0){
+                rejoint_state.effort[i] = xarm_joint_state.effort[i];
             }
         }
 
     }
         
-    for (long unsigned int i=0; i < rejoint_states.position.size(); i++){
-        if(rejoint_states.name[i] == "azure_camera_joint"){
-            if(rejoint_states.position.size() > 0){
+    for (long unsigned int i=0; i < rejoint_state.position.size(); i++){
+        if(rejoint_state.name[i] == "azure_camera_joint"){
+            if(rejoint_state.position.size() > 0){
                 rejoint_state.position[i] = dyna_joint_state.position[0];
             }
-            if(rejoint_states.velocity.size() > 0){
+            if(rejoint_state.velocity.size() > 0){
                 rejoint_state.velocity[i] = dyna_joint_state.velocity[0];
             }
-            if(rejoint_states.effort.size() > 0){
+            if(rejoint_state.effort.size() > 0){
                 rejoint_state.effort[i] = dyna_joint_state.effort[0];
             }
         }
-        else if(rejoint_states.name[i] == "right_arm_joint"){
-            if(rejoint_states.position.size() > 0){
+        else if(rejoint_state.name[i] == "right_arm_joint"){
+            if(rejoint_state.position.size() > 0){
                 rejoint_state.position[i] = arm_joint_state.position[0];
             }
-            if(rejoint_states.velocity.size() > 0){
+            if(rejoint_state.velocity.size() > 0){
                 rejoint_state.velocity[i] = arm_joint_state.velocity[0];
             }
-            if(rejoint_states.effort.size() > 0){
+            if(rejoint_state.effort.size() > 0){
                 rejoint_state.effort[i] = arm_joint_state.effort[0];
             }
         }
-        else if(rejoint_states.name[i] == "left_arm_joint"){
-            if(rejoint_states.position.size() > 0){
+        else if(rejoint_state.name[i] == "left_arm_joint"){
+            if(rejoint_state.position.size() > 0){
                 rejoint_state.position[i] = arm_joint_state.position[1];
             }
-            if(rejoint_states.velocity.size() > 0){
+            if(rejoint_state.velocity.size() > 0){
                 rejoint_state.velocity[i] = arm_joint_state.velocity[1];
             }
-            if(rejoint_states.effort.size() > 0){
+            if(rejoint_state.effort.size() > 0){
                 rejoint_state.effort[i] = arm_joint_state.effort[1];
             }
         }
@@ -133,10 +133,10 @@ ChangeJointStates::ChangeJointStates(
     const std::string& name_space,
     const rclcpp::NodeOptions& options
 ): Node("change_joint_states", name_space, options){
-    sub_joint_state = this->create_subscription<sensor_msgs::msg::JointState>(
+    sub_xarm_joint_state = this->create_subscription<sensor_msgs::msg::JointState>(
         "joint_states_remap",
         rclcpp::QoS(10),
-        std::bind(&ChangeJointStates::jointstate_callback, this, _1));
+        std::bind(&ChangeJointStates::xarm_jointstate_callback, this, _1));
 
     sub_dyna_joint_state = this->create_subscription<sensor_msgs::msg::JointState>(
         "/dyna_joint_state",
@@ -150,7 +150,7 @@ ChangeJointStates::ChangeJointStates(
     
     timer = this->create_wall_timer(
         10ms,
-        std::bind(&ChangeJointStates::timer_callback, this, _1));
+        [this]() -> void{ ChangeJointStates::timer_callback(); });
 
     pub_joint_state = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", rclcpp::QoS(10));
 
@@ -204,11 +204,11 @@ ChangeJointStates::ChangeJointStates(
     xarm_joint_state.position.clear();
     xarm_joint_state.velocity.clear();
     xarm_joint_state.effort.clear();
-    xarm_joint_state.name.pushback("joint1");
-    xarm_joint_state.name.pushback("joint2");
-    xarm_joint_state.name.pushback("joint3");
-    xarm_joint_state.name.pushback("joint4");
-    xarm_joint_state.name.pushback("joint5");
+    xarm_joint_state.name.push_back("joint1");
+    xarm_joint_state.name.push_back("joint2");
+    xarm_joint_state.name.push_back("joint3");
+    xarm_joint_state.name.push_back("joint4");
+    xarm_joint_state.name.push_back("joint5");
     for (size_t i = 0; i < 5; i++){
         xarm_joint_state.position.push_back(0.0);
         xarm_joint_state.velocity.push_back(0.0);
