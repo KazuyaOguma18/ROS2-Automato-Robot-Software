@@ -239,6 +239,7 @@ int main(int argc, char * argv[]){
     float hand_data[] = {0.0, 0.0, 0.0};
     int try_count = 0;
     bool initialize = true;
+    geometry_msgs::msg::PoseStamped current_pose;
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     moveit_msgs::msg::CollisionObject collision_object;
     std::vector<std::string> objects;
@@ -377,89 +378,107 @@ int main(int argc, char * argv[]){
             if(try_count > TRY_MOTION_GENERATE_COUNT){
                 continue;
             }
-            else {while(!move_group.execute(plan)){move_group.plan(plan);}}
-
-            initialize = true;
-
-            // ハンドの機動→キャッチまで
-            // ハンドを開く
-            // 吸引軸伸ばす
-            hand_data[0] = 210.0;
-            hand_data[1] = 230.0;
-            hand_data[2] = 0.0;
-            hand_service(hand_client, hand_request, hand_data);
-
-            // ポンプ駆動
-            hand_data[2] = 1.0;
-            hand_service(hand_client, hand_request, hand_data);
-
-            hand_data[0] = 120.0;
-            hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(100ms);
-
-            hand_data[0] = 210.0;
-            hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(500ms);
-
-            // 吸引軸の動作量生成
-            create_eef_motion(hand_data, radius, 1.0, "open");
-            hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(500ms);
-
-            // キャッチ
-            create_eef_motion(hand_data, radius, 1.0, "close");
-            hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(500ms);
-
-            // ポンプ停止
-            // create_eef_motion(hand_data, radius, 0.0, "close");
-            // hand_service(hand_client, hand_request, hand_data);
-
-            // オブジェクトの把持
-            move_group.attachObject("tomato");
-
-            // エフェクタ軸回転
-            joint_values = move_group.getCurrentJointValues();
-            joint_values[4] = GRIPPER_STATE1;
-            if (move_group.setJointValueTarget(joint_values)){
-                move_group.move();
-            }
-
-            joint_values = move_group.getCurrentJointValues();
-            joint_values[4] = GRIPPER_STATE2;
-            if (move_group.setJointValueTarget(joint_values)){
-                move_group.move();
-            }
-
-            // キャッチの完了→果実を置くところへ移動
-            joint_values = move_group.getCurrentJointValues();
-            joint_values[0] = to_radians(-38.54);
-            joint_values[1] = to_radians(-43.16);
-            joint_values[2] = to_radians(-22.65);
-            joint_values[3] = to_radians(65.80);
-            joint_values[4] = to_radians(-38.53);
-            if (move_group.setJointValueTarget(joint_values)){
-                while(!move_group.move()){
+            else {
+                // ロボットアームが突然動作停止したときに再度動作生成を行う
+                try_count = 0;
+                while(!move_group.execute(plan)){
+                    move_group.plan(plan);
+                    if (try_count > TRY_MOTION_GENERATE_COUNT){
+                        break;
+                    }
+                    else {try_count++;}
+                }
+                // 5回以上動作生成失敗したら新しい果実のデータを取りに行く
+                if(try_count > TRY_MOTION_GENERATE_COUNT){
                     continue;
                 }
+                initialize = true;
+
+                current_pose = move_group.getCurrentPose();
+                if (sqrt(pow(current_pose.pose.position.x - x, 2.0) + pow(current_pose.pose.position.y - y, 2.0) + pow(current_pose.pose.position.z - z, 2.0)) > 0.1){
+                    continue;
+                }
+                
+
+                // ハンドの機動→キャッチまで
+                // ハンドを開く
+                // 吸引軸伸ばす
+                hand_data[0] = 210.0;
+                hand_data[1] = 230.0;
+                hand_data[2] = 0.0;
+                hand_service(hand_client, hand_request, hand_data);
+
+                // ポンプ駆動
+                hand_data[2] = 1.0;
+                hand_service(hand_client, hand_request, hand_data);
+
+                hand_data[0] = 120.0;
+                hand_service(hand_client, hand_request, hand_data);
+                rclcpp::sleep_for(100ms);
+
+                hand_data[0] = 210.0;
+                hand_service(hand_client, hand_request, hand_data);
+                rclcpp::sleep_for(500ms);
+
+                // 吸引軸の動作量生成
+                create_eef_motion(hand_data, radius, 1.0, "open");
+                hand_service(hand_client, hand_request, hand_data);
+                rclcpp::sleep_for(500ms);
+
+                // キャッチ
+                create_eef_motion(hand_data, radius, 1.0, "close");
+                hand_service(hand_client, hand_request, hand_data);
+                rclcpp::sleep_for(500ms);
+
+                // ポンプ停止
+                // create_eef_motion(hand_data, radius, 0.0, "close");
+                // hand_service(hand_client, hand_request, hand_data);
+
+                // オブジェクトの把持
+                move_group.attachObject("tomato");
+
+                // エフェクタ軸回転
+                joint_values = move_group.getCurrentJointValues();
+                joint_values[4] = GRIPPER_STATE1;
+                if (move_group.setJointValueTarget(joint_values)){
+                    move_group.move();
+                }
+
+                joint_values = move_group.getCurrentJointValues();
+                joint_values[4] = GRIPPER_STATE2;
+                if (move_group.setJointValueTarget(joint_values)){
+                    move_group.move();
+                }
+
+                // キャッチの完了→果実を置くところへ移動
+                joint_values = move_group.getCurrentJointValues();
+                joint_values[0] = to_radians(-38.54);
+                joint_values[1] = to_radians(-43.16);
+                joint_values[2] = to_radians(-22.65);
+                joint_values[3] = to_radians(65.80);
+                joint_values[4] = to_radians(-38.53);
+                if (move_group.setJointValueTarget(joint_values)){
+                    while(!move_group.move()){
+                        continue;
+                    }
+                }
+
+                //　ハンドの把持を解除
+                hand_data[0] = 10.0;
+                hand_data[1] = 230.0;
+                hand_data[2] = 0.0;
+                hand_service(hand_client, hand_request, hand_data);
+                rclcpp::sleep_for(1s);
+
+                // 把持の終了
+                hand_data[1] = 10.0;
+                hand_service(hand_client, hand_request, hand_data);
+                rclcpp::sleep_for(1s);
+
+                // オブジェクトの把持を解除
+                move_group.detachObject("tomato");           
+            
             }
-
-            //　ハンドの把持を解除
-            hand_data[0] = 10.0;
-            hand_data[1] = 230.0;
-            hand_data[2] = 0.0;
-            hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(1s);
-
-            // 把持の終了
-            hand_data[1] = 10.0;
-            hand_service(hand_client, hand_request, hand_data);
-            rclcpp::sleep_for(1s);
-
-            // オブジェクトの把持を解除
-            move_group.detachObject("tomato");
-
-
         }
     }
 

@@ -53,7 +53,7 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
         if (robotarm_hand_status == NOT_HARVESTING){
             // ポットの回転モードが変化したらカメラ位置を初期化する
             if (previous_rotate_mode != pot_rotate_mode){
-                angle_value = to_radian(-30.0);
+                angle_value = to_radian(-15.0);
             }
 
             if (harvest_completed(rs_loop_complete_count, azure_loop_complete_count, status->data) == HARVEST_COMPLETED){
@@ -75,7 +75,7 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
                         angle_value += to_radian(15.0);
                     }
                     else{
-                        angle_value = to_radian(-30.0);
+                        angle_value = to_radian(-15.0);
                         rotate_trigger = 1;
                         is_rotating = 1;
                     }
@@ -91,13 +91,13 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
         studio_control_signal_pub->publish(studio_signal);
     }
 
-    else{
-        angle_value = to_radian(-30.0);
-        jointstate.header.stamp = rclcpp::Clock().now();
-        jointstate.name.push_back("azure_camera_joint");
-        jointstate.position.push_back(angle_value);
-        jointstate_pub->publish(jointstate);
-    }
+    // else{
+    //     angle_value = to_radian(-30.0);
+    //     jointstate.header.stamp = rclcpp::Clock().now();
+    //     jointstate.name.push_back("azure_camera_joint");
+    //     jointstate.position.push_back(angle_value);
+    //     jointstate_pub->publish(jointstate);
+    // }
 
     previous_rotate_mode = pot_rotate_mode;    
 }
@@ -194,7 +194,7 @@ HarvestStudioControl::HarvestStudioControl(
         rclcpp::QoS(10),
         std::bind(&HarvestStudioControl::robotarm_hand_status_callback, this, _1));
 
-    angle_value = to_radian(-30.0);    
+    angle_value = to_radian(-15.0);    
 }
 
 int main(int argc, char * argv[]){

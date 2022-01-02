@@ -72,9 +72,12 @@ class HandRos2Serial(Node):
             self.previous_array[i] = self.current_array[i]
             
         if response.status:
-            senddata = bytes(str(self.goal_array[0]) + "," + str(self.goal_array[1]) + "," + str(self.goal_array[2]), encoding='utf-8')
-            self.ser.write(senddata) 
-
+            try:
+                senddata = bytes(str(self.goal_array[0]) + "," + str(self.goal_array[1]) + "," + str(self.goal_array[2]), encoding='utf-8')
+                self.ser.write(senddata) 
+            except Exception as err:
+                pass
+            
         return response
 
     # 周期性の制御

@@ -78,14 +78,15 @@ class TomatoDetector(Node):
             rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
             rs_ts.registerCallback(self.rs_image_callback)         
             #realsenseの解像度指定
-            self.width_color = 640
+            self.width_color = int(640*0.8)
             self.height_color = 480
-            self.width_depth = 640
+            self.width_depth = int(640*0.8)
             self.height_depth = 480 
             self.get_logger().info("camera_mode: "+str(camera_mode.value))   
             
             # realsenseのtf定義
-            self.camera_frame = "camera_color_optical_frame"    
+            self.camera_frame = "camera_link" 
+            self.offset = -0.02  
                    
         elif str(camera_mode.value) == 'azure':
             video_qos = qos.QoSProfile(depth=10)
@@ -102,7 +103,8 @@ class TomatoDetector(Node):
             self.height_depth = 1080
 
             # azureのtf定義
-            self.camera_frame = "rgb_camera_link"
+            self.camera_frame = "camera_base"
+            self.offset = -0.035   
 
             
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
@@ -146,8 +148,8 @@ class TomatoDetector(Node):
             if self.intrinsics.fx != None:
                 return
 
-            self.intrinsics.width = cameraInfo.width
-            self.intrinsics.height = cameraInfo.height
+            self.intrinsics.width = int(cameraInfo.width)
+            self.intrinsics.height = int(cameraInfo.height)
             self.intrinsics.ppx = cameraInfo.k[2]
             self.intrinsics.ppy = cameraInfo.k[5]
             self.intrinsics.fx = cameraInfo.k[0]
@@ -182,13 +184,13 @@ class TomatoDetector(Node):
     #  tfにより位置関係を取得し座標変換
     def rs_image_callback(self, color_msg, depth_msg):
         if self.intrinsics.fx != None:
-            width = self.intrinsics.width * 0.1
-            height = self.intrinsics.height
+            width = int(self.intrinsics.width * 0.1)
+            height = int(self.intrinsics.height)
             color_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, color_msg, "bgr8")
-            self.rs_color_image = color_tmp[0:height, width:self.intrinsics.width-width]
+            self.rs_color_image = color_tmp[0:height, width:self.intrinsics.width - width]
             depth_image = self.process_image(self.intrinsics.height, self.intrinsics.width, depth_msg, "16UC1")
             depth_tmp = depth_image.astype(np.uint16)
-            self.rs_depth_image = depth_tmp[0:height, width:self.intrinsics.width-width]
+            self.rs_depth_image = depth_tmp[0:height, width:self.intrinsics.width - width]
             # cv2.imshow("n_depth", self.rs_depth_image)
             # self.get_logger().info(str(max(self.rs_depth_image)))
             self.color_image_callback(mode="rs")
@@ -196,12 +198,12 @@ class TomatoDetector(Node):
 
     def azure_image_callback(self, color_msg, depth_msg):
         if self.intrinsics.fx != None:
-            width = self.intrinsics.width / 3
-            height = self.intrinsics.height
+            width = int(self.intrinsics.width / 3)
+            height = int(self.intrinsics.height)
             color_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, color_msg, "bgr8")
             self.azure_color_image = color_tmp[0:height, width:self.intrinsics.width - width]
             depth_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, depth_msg, "16UC1")
-            self.azure_depth_image = depth_tmp[0:height, self.intrinsics.width:self.intrinsics.width - width]
+            self.azure_depth_image = depth_tmp[0:height, width:self.intrinsics.width - width]
             self.color_image_callback(mode="azure")
 
     def azure_depth_callback(self, msg):
@@ -256,11 +258,11 @@ class TomatoDetector(Node):
     # この部分のカメラフレームを変更してみる
     def transform_tomato_position(self, x, y, z, mode):
         if mode == 'rs':
-            camera_frame = 'camera_link'
+            camera_frame = self.camera_frame
             child_frame = 'rs_tomato'
             
         elif mode == 'azure':
-            camera_frame = 'camera_base'
+            camera_frame = self.camera_frame
             child_frame = 'azure_tomato'
             
         try:
@@ -272,7 +274,7 @@ class TomatoDetector(Node):
             now = self.get_clock().now()
             t.header.stamp = now.to_msg()
             t.transform.translation.x = z*0.001
-            t.transform.translation.y = x*(-0.001)
+            t.transform.translation.y = x*(-0.001) + self.offset
             t.transform.translation.z = y*0.001
             t.transform.rotation.x = 0.
             t.transform.rotation.y = 0.
@@ -299,7 +301,7 @@ class TomatoDetector(Node):
             # カメラの位置
             camera_position_matrix = np.array([trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z])
             # カメラから見た果実の位置
-            fruit_position_matrix = np.array([z*0.001, x*(-0.001), y*0.001])
+            fruit_position_matrix = np.array([z*0.001, x*(-0.001) + self.offset, y*0.001])
             # 果実をカメラ座標系からアーム座標系に変換
             transformed_fruit_matrix = np.dot(rotate_matrix, fruit_position_matrix.T) + camera_position_matrix.T
             fruit_position = [transformed_fruit_matrix[0], transformed_fruit_matrix[1], transformed_fruit_matrix[2]]
