@@ -78,15 +78,16 @@ class TomatoDetector(Node):
             rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
             rs_ts.registerCallback(self.rs_image_callback)         
             #realsenseの解像度指定
-            self.width_color = int(640*0.8)
+            self.width_color = int(640*0.7)
             self.height_color = 480
-            self.width_depth = int(640*0.8)
+            self.width_depth = int(640*0.7)
             self.height_depth = 480 
             self.get_logger().info("camera_mode: "+str(camera_mode.value))   
             
             # realsenseのtf定義
             self.camera_frame = "camera_link" 
-            self.offset = -0.02  
+            self.x_offset = 0.025
+            self.y_offset = 0.01  
                    
         elif str(camera_mode.value) == 'azure':
             video_qos = qos.QoSProfile(depth=10)
@@ -104,7 +105,8 @@ class TomatoDetector(Node):
 
             # azureのtf定義
             self.camera_frame = "camera_base"
-            self.offset = -0.035   
+            self.x_offset = -0.035
+            self.y_offset = 0.01 
 
             
             self.get_logger().info("camera_mode: "+str(camera_mode.value))
@@ -121,26 +123,6 @@ class TomatoDetector(Node):
         self.br = TransformBroadcaster(self)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)  
-
-        # TFの定義
-        """
-        self.tf_rs_buffer = Buffer()
-        self.tf_rs_listener = TransformListener(self.tf_rs_buffer, self)
-        self.tf_azure_buffer = Buffer()
-        self.tf_azure_listener = TransformListener(self.tf_azure_buffer, self)
-        self.rs_target_frame = self.get_parameter(
-            'realsense_no_target').get_parameter_value().string_value
-        self.fruit_target_frame = 'fruit_target_frame'
-
-        self.br = TransformBroadcaster(self)
-        """
-
-
-        # 画像用の変数定義
-        # self.rs_color_image = np.zeros(720, 1280)
-        # self.rs_depth_image = np.zeros(720, 1280)
-        # self.azure_color_image = np.zeros(720, 1280)
-        # self.azure_depth_image = np.zeros(720, 1280)
         
 
     def depth_info_callback(self, cameraInfo):
@@ -184,7 +166,7 @@ class TomatoDetector(Node):
     #  tfにより位置関係を取得し座標変換
     def rs_image_callback(self, color_msg, depth_msg):
         if self.intrinsics.fx != None:
-            width = int(self.intrinsics.width * 0.1)
+            width = int(self.intrinsics.width * 0.15)
             height = int(self.intrinsics.height)
             color_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, color_msg, "bgr8")
             self.rs_color_image = color_tmp[0:height, width:self.intrinsics.width - width]
@@ -274,8 +256,8 @@ class TomatoDetector(Node):
             now = self.get_clock().now()
             t.header.stamp = now.to_msg()
             t.transform.translation.x = z*0.001
-            t.transform.translation.y = x*(-0.001) + self.offset
-            t.transform.translation.z = y*0.001
+            t.transform.translation.y = x*(-0.001) + self.x_offset
+            t.transform.translation.z = y*0.001 + self.y_offset
             t.transform.rotation.x = 0.
             t.transform.rotation.y = 0.
             t.transform.rotation.z = 0.
@@ -286,7 +268,7 @@ class TomatoDetector(Node):
             trans = self.tf_buffer.lookup_transform(                
                 "link_base",
                 camera_frame,
-                rclpy.time.Time(seconds=0), 
+                self.tf_buffer.get_latest_common_time("link_base", camera_frame), 
                 timeout=Duration(seconds=0.1))
             
             # トマト座標をカメラ座標系からアーム座標系へ線形変換
@@ -301,7 +283,7 @@ class TomatoDetector(Node):
             # カメラの位置
             camera_position_matrix = np.array([trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z])
             # カメラから見た果実の位置
-            fruit_position_matrix = np.array([z*0.001, x*(-0.001) + self.offset, y*0.001])
+            fruit_position_matrix = np.array([z*0.001, x*(-0.001) + self.x_offset, y*0.001 + self.y_offset])
             # 果実をカメラ座標系からアーム座標系に変換
             transformed_fruit_matrix = np.dot(rotate_matrix, fruit_position_matrix.T) + camera_position_matrix.T
             fruit_position = [transformed_fruit_matrix[0], transformed_fruit_matrix[1], transformed_fruit_matrix[2]]

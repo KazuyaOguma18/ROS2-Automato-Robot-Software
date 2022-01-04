@@ -63,6 +63,9 @@ void HarvestStudioControl::detect_status_callback(const std_msgs::msg::Int16::Sh
                     jointstate.position.push_back(angle_value);
                     jointstate_pub->publish(jointstate);
 
+                    rs_loop_complete_count = 0;
+                    azure_loop_complete_count = 0;
+
                     // カメラ角の制御が完了したら、ポット回転信号を送信する
                     if (rotate_trigger == 1){
                         rotate_trigger = 0;
@@ -149,8 +152,7 @@ int HarvestStudioControl::harvest_completed(int rs_loop_count,
                                             int detect_status){
     if (rs_loop_count > 1 && azure_loop_count > 1){
         if (detect_status == 0){
-            rs_loop_complete_count = 0;
-            azure_loop_complete_count = 0;
+
             return HARVEST_COMPLETED;
         }
     }

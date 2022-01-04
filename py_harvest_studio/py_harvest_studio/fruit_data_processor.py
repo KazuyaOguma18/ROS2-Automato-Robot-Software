@@ -85,7 +85,7 @@ class FruitDataProcessor(Node):
             self.msg = FruitData()
             # 新規果実が奥すぎないかチェック
             for i in range(len(msg.x)):
-                if msg.x[i] < 0.7 and msg.x[i] > 0.3:
+                if msg.x[i] < 0.7 and msg.x[i] > 0.45:
                     self.msg.x.append(msg.x[i])
                     self.msg.y.append(msg.y[i])
                     self.msg.z.append(msg.z[i])
@@ -314,7 +314,7 @@ class FruitDataProcessor(Node):
 
         if self.previous_data_len == len(self.x):
             # 果実の情報が収穫データに移行しなくなったら5カウント後初期化
-            if self.not_harvest_count > 5:
+            if self.not_harvest_count > 100:
                 self.not_harvest_count = 0
                 self.initialize()
                 

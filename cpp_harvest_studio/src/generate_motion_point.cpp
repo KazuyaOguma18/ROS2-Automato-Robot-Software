@@ -26,6 +26,7 @@
 #include <cmath>
 
 #define TRY_MOTION_GENERATE_COUNT 5
+#define TRY_MOTION_EXECUTE_COUNT 20
 #define IS_HARVESTING true
 #define NOT_HARVESTING false
 
@@ -212,18 +213,39 @@ int main(int argc, char * argv[]){
     move_group.setMaxVelocityScalingFactor(0.4);
     move_group.setMaxAccelerationScalingFactor(0.1);
     move_group.setPlanningTime(0.5);
+    move_group.allowReplanning(true);
     auto joint_values = move_group.getCurrentJointValues();
-    double GRIPPER_STATE1 = to_radians(-360);
-    double GRIPPER_STATE2 = to_radians(360);
+    auto place_joint_values = move_group.getCurrentJointValues();
+    place_joint_values[0] = to_radians(-38.54);
+    place_joint_values[1] = to_radians(-43.16);
+    place_joint_values[2] = to_radians(-22.65);
+    place_joint_values[3] = to_radians(65.80);
+    place_joint_values[4] = to_radians(-38.53);
+
+    double GRIPPER_STATE1 = to_radians(-90);
+    double GRIPPER_STATE2 = to_radians(90);
     geometry_msgs::msg::Pose target_pose;
     geometry_msgs::msg::PoseStamped target_pose_stamped;
     tf2::Quaternion q;
 
     std_msgs::msg::Float32MultiArray eef_data;
 
+    double yaw;
+    float hand_data[] = {0.0, 0.0, 0.0};
+    double last_harvest_position[] = {0.0, 0.0, 0.0};
+    int try_count = 0;
+    bool initialize = true;
+    double initial_tolerance;
+    geometry_msgs::msg::PoseStamped current_pose;
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    moveit::planning_interface::MoveGroupInterface::Plan initialize_plan;
+    moveit_msgs::msg::CollisionObject collision_object;
+    std::vector<std::string> objects;
+    objects.push_back("tomato");
     // -----------------------initial pose--------------------------
     robotarm_hand_status.data = IS_HARVESTING;
     robotarm_hand_status_pub->publish(robotarm_hand_status);
+    
     RCLCPP_INFO(rclcpp::get_logger("GMP"), "Pose Initialize");
     while (!move_group.setNamedTarget("hold-up")){
         continue;
@@ -235,32 +257,30 @@ int main(int argc, char * argv[]){
     robotarm_hand_status_pub->publish(robotarm_hand_status);
     // -----------------------initial pose--------------------------
 
-    double yaw;
-    float hand_data[] = {0.0, 0.0, 0.0};
-    int try_count = 0;
-    bool initialize = true;
-    geometry_msgs::msg::PoseStamped current_pose;
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    moveit_msgs::msg::CollisionObject collision_object;
-    std::vector<std::string> objects;
-    objects.push_back("tomato");
 
+
+    
 
     while (rclcpp::ok()){
+
+        move_group.clearPoseTarget();
 
         try_count = 0;
 
         // 初期姿勢
+        initial_tolerance = 0.0;
+        joint_values = move_group.getCurrentJointValues();
+        for (size_t i = 0; i < 5; i++){
+            initial_tolerance += pow(joint_values[i] - place_joint_values[i], 2.0);
+        }
+        if (initial_tolerance > 0.1){
+            initialize = true;
+        }
+
         if (initialize){
             robotarm_hand_status.data = IS_HARVESTING;
             robotarm_hand_status_pub->publish(robotarm_hand_status);
-            joint_values = move_group.getCurrentJointValues();
-            joint_values[0] = to_radians(-38.54);
-            joint_values[1] = to_radians(-43.16);
-            joint_values[2] = to_radians(-22.65);
-            joint_values[3] = to_radians(65.80);
-            joint_values[4] = to_radians(-38.53);
-            if (move_group.setJointValueTarget(joint_values)){
+            if (move_group.setJointValueTarget(place_joint_values)){
                 while(!move_group.move()){
                     continue;
                 }
@@ -307,6 +327,11 @@ int main(int argc, char * argv[]){
             RCLCPP_INFO(rclcpp::get_logger("GMP"), "recieved data is false");
             continue;
         }
+
+        // 前回の収穫座標との差が1cmしかない場合、収穫作業は行わない
+        else if (sqrt(pow(x - last_harvest_position[0], 2.0) + pow(y - last_harvest_position[1], 2.0) + pow(z - last_harvest_position[2], 2.0)) < 0.01){
+            continue;
+        }
         
         else{
             robotarm_hand_status.data = IS_HARVESTING;
@@ -315,6 +340,7 @@ int main(int argc, char * argv[]){
             do  {
                 // アームの動作生成
                 RCLCPP_INFO(rclcpp::get_logger("GMP"), "Generating robot arm motion");
+
                 // 果実位置まで移動
                 target_pose.position.x = x;
                 target_pose.position.y = y;
@@ -324,23 +350,23 @@ int main(int argc, char * argv[]){
                 switch (try_count)
                 {
                 case 0:
-                    q.setRPY(0.0, to_radians(150), yaw);
-                    RCLCPP_INFO(rclcpp::get_logger("GMP"), "degree: 150");
-                    break;
-
-                case 1:
                     q.setRPY(0.0, to_radians(140), yaw);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "degree: 140");
                     break;
 
-                case 2:
+                case 1:
                     q.setRPY(0.0, to_radians(130), yaw);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "degree: 130");
                     break;
 
-                case 3:
+                case 2:
                     q.setRPY(0.0, to_radians(120), yaw);
                     RCLCPP_INFO(rclcpp::get_logger("GMP"), "degree: 120");
+                    break;
+
+                case 3:
+                    q.setRPY(0.0, to_radians(110), yaw);
+                    RCLCPP_INFO(rclcpp::get_logger("GMP"), "degree: 110");
                     break;
 
                 case 4:
@@ -383,13 +409,13 @@ int main(int argc, char * argv[]){
                 try_count = 0;
                 while(!move_group.execute(plan)){
                     move_group.plan(plan);
-                    if (try_count > TRY_MOTION_GENERATE_COUNT){
+                    if (try_count > TRY_MOTION_EXECUTE_COUNT){
                         break;
                     }
                     else {try_count++;}
                 }
                 // 5回以上動作生成失敗したら新しい果実のデータを取りに行く
-                if(try_count > TRY_MOTION_GENERATE_COUNT){
+                if(try_count > TRY_MOTION_EXECUTE_COUNT){
                     continue;
                 }
                 initialize = true;
@@ -451,13 +477,7 @@ int main(int argc, char * argv[]){
                 }
 
                 // キャッチの完了→果実を置くところへ移動
-                joint_values = move_group.getCurrentJointValues();
-                joint_values[0] = to_radians(-38.54);
-                joint_values[1] = to_radians(-43.16);
-                joint_values[2] = to_radians(-22.65);
-                joint_values[3] = to_radians(65.80);
-                joint_values[4] = to_radians(-38.53);
-                if (move_group.setJointValueTarget(joint_values)){
+                if (move_group.setJointValueTarget(place_joint_values)){
                     while(!move_group.move()){
                         continue;
                     }
@@ -476,10 +496,15 @@ int main(int argc, char * argv[]){
                 rclcpp::sleep_for(1s);
 
                 // オブジェクトの把持を解除
-                move_group.detachObject("tomato");           
+                move_group.detachObject("tomato");
+
+        
             
             }
-        }
+        }       
+        last_harvest_position[0] = x;
+        last_harvest_position[1] = y;
+        last_harvest_position[2] = z;  
     }
 
     rclcpp::shutdown();
