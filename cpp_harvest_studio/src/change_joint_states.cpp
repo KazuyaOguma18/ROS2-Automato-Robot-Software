@@ -95,17 +95,6 @@ void ChangeJointStates::arm_jointstate_callback(const sensor_msgs::msg::JointSta
     for (long unsigned int i=0; i<jointstates->position.size(); i++){
         if(jointstates->name[i] == "right_arm_joint"){
             if(jointstates->position.size() > 0){
-                arm_joint_state.position[0] = jointstates->position[i];
-            }
-            if(jointstates->velocity.size() > 0){
-                arm_joint_state.velocity[0] = jointstates->velocity[i];
-            }
-            if(jointstates->effort.size() > 0){
-                arm_joint_state.effort[0] = jointstates->effort[i];
-            }
-        }
-        else if(jointstates->name[i] == "left_arm_joint"){
-            if(jointstates->position.size() > 0){
                 arm_joint_state.position[1] = jointstates->position[i];
             }
             if(jointstates->velocity.size() > 0){
@@ -113,6 +102,17 @@ void ChangeJointStates::arm_jointstate_callback(const sensor_msgs::msg::JointSta
             }
             if(jointstates->effort.size() > 0){
                 arm_joint_state.effort[1] = jointstates->effort[i];
+            }
+        }
+        else if(jointstates->name[i] == "left_arm_joint"){
+            if(jointstates->position.size() > 0){
+                arm_joint_state.position[0] = jointstates->position[i];
+            }
+            if(jointstates->velocity.size() > 0){
+                arm_joint_state.velocity[0] = jointstates->velocity[i];
+            }
+            if(jointstates->effort.size() > 0){
+                arm_joint_state.effort[0] = jointstates->effort[i];
             }
         }
     }

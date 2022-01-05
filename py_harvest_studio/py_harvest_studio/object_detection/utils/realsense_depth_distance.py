@@ -42,8 +42,10 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, mode, in
         vfov = 2*math.atan(intrinsics.height/(2*intrinsics.fy))
 
     if mode == "rs":
-        theta_x_1 = math.atan(x_1*math.tan(hfov/2))
-        theta_x_2 = math.atan(x_2*math.tan(hfov/2))
+        theta_x0 = math.atan(0.7* math.tan(hfov/2))
+        
+        theta_x_1 = math.atan(x_1*math.tan(theta_x0))
+        theta_x_2 = math.atan(x_2*math.tan(theta_x0))
         theta_y_1 = math.atan(y_1*math.tan(vfov/2))
         theta_y_2 = math.atan(y_2*math.tan(vfov/2))
     elif mode == "azure":

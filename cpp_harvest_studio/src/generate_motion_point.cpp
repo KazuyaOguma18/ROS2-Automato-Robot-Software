@@ -25,7 +25,7 @@
 #include <memory>
 #include <cmath>
 
-#define TRY_MOTION_GENERATE_COUNT 5
+#define TRY_MOTION_GENERATE_COUNT 6
 #define TRY_MOTION_EXECUTE_COUNT 20
 #define IS_HARVESTING true
 #define NOT_HARVESTING false
@@ -60,7 +60,7 @@ void create_eef_motion(float hand_data[], float radius, float pump, std::string 
     
     // finger制御
     if (finger == "open"){
-        hand_data[1] = 210.0;
+        hand_data[1] = 240.0;
     }
     else if (finger == "close"){
         hand_data[1] = 10.0;
@@ -212,7 +212,7 @@ int main(int argc, char * argv[]){
 
     move_group.setMaxVelocityScalingFactor(0.4);
     move_group.setMaxAccelerationScalingFactor(0.1);
-    move_group.setPlanningTime(0.5);
+    move_group.setPlanningTime(0.8);
     move_group.allowReplanning(true);
     auto joint_values = move_group.getCurrentJointValues();
     auto place_joint_values = move_group.getCurrentJointValues();
@@ -375,8 +375,8 @@ int main(int argc, char * argv[]){
                     break;
 
                 default:
-                    q.setRPY(0.0, to_radians(100), yaw);
-                    RCLCPP_INFO(rclcpp::get_logger("GMP"), "degree: 100");
+                    q.setRPY(0.0, to_radians(90), yaw);
+                    RCLCPP_INFO(rclcpp::get_logger("GMP"), "degree: 90");
                     break;
                 }
                 
@@ -394,7 +394,7 @@ int main(int argc, char * argv[]){
                     try_count++;
                 }
 
-                if (try_count >= TRY_MOTION_GENERATE_COUNT){
+                if (try_count > TRY_MOTION_GENERATE_COUNT){
                     break;
                 }
                 
@@ -430,7 +430,7 @@ int main(int argc, char * argv[]){
                 // ハンドを開く
                 // 吸引軸伸ばす
                 hand_data[0] = 210.0;
-                hand_data[1] = 230.0;
+                hand_data[1] = 240.0;
                 hand_data[2] = 0.0;
                 hand_service(hand_client, hand_request, hand_data);
 
@@ -462,6 +462,8 @@ int main(int argc, char * argv[]){
 
                 // オブジェクトの把持
                 move_group.attachObject("tomato");
+                fruit_target_command_pub->publish(fruit_target_command);
+                rclcpp::sleep_for(500ms);
 
                 // エフェクタ軸回転
                 joint_values = move_group.getCurrentJointValues();
@@ -485,7 +487,7 @@ int main(int argc, char * argv[]){
 
                 //　ハンドの把持を解除
                 hand_data[0] = 10.0;
-                hand_data[1] = 230.0;
+                hand_data[1] = 240.0;
                 hand_data[2] = 0.0;
                 hand_service(hand_client, hand_request, hand_data);
                 rclcpp::sleep_for(1s);

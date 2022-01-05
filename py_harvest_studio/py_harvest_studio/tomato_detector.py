@@ -86,8 +86,8 @@ class TomatoDetector(Node):
             
             # realsenseのtf定義
             self.camera_frame = "camera_link" 
-            self.x_offset = 0.025
-            self.y_offset = 0.01  
+            self.x_offset = 0.015
+            self.y_offset = 0.015 
                    
         elif str(camera_mode.value) == 'azure':
             video_qos = qos.QoSProfile(depth=10)
@@ -106,7 +106,7 @@ class TomatoDetector(Node):
             # azureのtf定義
             self.camera_frame = "camera_base"
             self.x_offset = -0.035
-            self.y_offset = 0.01 
+            self.y_offset = 0.02 
 
             
             self.get_logger().info("camera_mode: "+str(camera_mode.value))

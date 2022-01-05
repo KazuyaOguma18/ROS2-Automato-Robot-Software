@@ -85,7 +85,7 @@ class FruitDataProcessor(Node):
             self.msg = FruitData()
             # 新規果実が奥すぎないかチェック
             for i in range(len(msg.x)):
-                if msg.x[i] < 0.7 and msg.x[i] > 0.45:
+                if msg.x[i] < 0.75 and msg.x[i] > 0.45:
                     self.msg.x.append(msg.x[i])
                     self.msg.y.append(msg.y[i])
                     self.msg.z.append(msg.z[i])
