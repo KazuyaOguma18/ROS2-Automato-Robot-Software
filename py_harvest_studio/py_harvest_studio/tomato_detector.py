@@ -53,6 +53,8 @@ class Intrinsics:
         self.ppy = None
         self.fx = None
         self.fy = None
+        self.coeffs = []
+        self.distortion_model = None
 
 
 class TomatoDetector(Node):
@@ -78,16 +80,16 @@ class TomatoDetector(Node):
             rs_ts = message_filters.TimeSynchronizer([rs_color_subscriber, rs_depth_subscriber], queue_size)
             rs_ts.registerCallback(self.rs_image_callback)         
             #realsenseの解像度指定
-            self.width_color = int(640*0.7)
+            self.width_color = int(640)
             self.height_color = 480
-            self.width_depth = int(640*0.7)
+            self.width_depth = int(640)
             self.height_depth = 480 
             self.get_logger().info("camera_mode: "+str(camera_mode.value))   
             
             # realsenseのtf定義
             self.camera_frame = "camera_link" 
-            self.x_offset = 0.015
-            self.y_offset = 0.015 
+            self.x_offset = 0.028
+            self.y_offset = 0.015
                    
         elif str(camera_mode.value) == 'azure':
             video_qos = qos.QoSProfile(depth=10)
@@ -125,7 +127,7 @@ class TomatoDetector(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)  
         
 
-    def depth_info_callback(self, cameraInfo):
+    def depth_info_callback(self, cameraInfo: CameraInfo):
         try:
             if self.intrinsics.fx != None:
                 return
@@ -136,6 +138,8 @@ class TomatoDetector(Node):
             self.intrinsics.ppy = cameraInfo.k[5]
             self.intrinsics.fx = cameraInfo.k[0]
             self.intrinsics.fy = cameraInfo.k[4]
+            self.intrinsics.coeffs = [i for i in cameraInfo.D]
+            self.intrinsics.distortion_model = cameraInfo.distortion_model
         
         except Exception as e:
             print(e)
@@ -166,13 +170,13 @@ class TomatoDetector(Node):
     #  tfにより位置関係を取得し座標変換
     def rs_image_callback(self, color_msg, depth_msg):
         if self.intrinsics.fx != None:
-            width = int(self.intrinsics.width * 0.15)
+            width = int(self.intrinsics.width)
             height = int(self.intrinsics.height)
             color_tmp = self.process_image(self.intrinsics.height, self.intrinsics.width, color_msg, "bgr8")
-            self.rs_color_image = color_tmp[0:height, width:self.intrinsics.width - width]
+            self.rs_color_image = color_tmp[0:height, 0:self.intrinsics.width]
             depth_image = self.process_image(self.intrinsics.height, self.intrinsics.width, depth_msg, "16UC1")
             depth_tmp = depth_image.astype(np.uint16)
-            self.rs_depth_image = depth_tmp[0:height, width:self.intrinsics.width - width]
+            self.rs_depth_image = depth_tmp[0:height, 0:self.intrinsics.width]
             # cv2.imshow("n_depth", self.rs_depth_image)
             # self.get_logger().info(str(max(self.rs_depth_image)))
             self.color_image_callback(mode="rs")
@@ -265,6 +269,7 @@ class TomatoDetector(Node):
             self.br.sendTransform(t)
             
             # カメラと果実の座標の位置関係を取得
+            self.tf_buffer.wait_for_transform_async("link_base", camera_frame, now)
             trans = self.tf_buffer.lookup_transform(                
                 "link_base",
                 camera_frame,

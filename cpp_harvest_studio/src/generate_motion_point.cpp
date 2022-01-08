@@ -60,7 +60,7 @@ void create_eef_motion(float hand_data[], float radius, float pump, std::string 
     
     // finger制御
     if (finger == "open"){
-        hand_data[1] = 240.0;
+        hand_data[1] = 250.0;
     }
     else if (finger == "close"){
         hand_data[1] = 10.0;
@@ -409,13 +409,13 @@ int main(int argc, char * argv[]){
                 try_count = 0;
                 while(!move_group.execute(plan)){
                     move_group.plan(plan);
-                    if (try_count > TRY_MOTION_EXECUTE_COUNT){
+                    if (try_count >= TRY_MOTION_EXECUTE_COUNT){
                         break;
                     }
                     else {try_count++;}
                 }
                 // 5回以上動作生成失敗したら新しい果実のデータを取りに行く
-                if(try_count > TRY_MOTION_EXECUTE_COUNT){
+                if(try_count >= TRY_MOTION_EXECUTE_COUNT){
                     continue;
                 }
                 initialize = true;
@@ -430,17 +430,19 @@ int main(int argc, char * argv[]){
                 // ハンドを開く
                 // 吸引軸伸ばす
                 hand_data[0] = 210.0;
-                hand_data[1] = 240.0;
-                hand_data[2] = 0.0;
-                hand_service(hand_client, hand_request, hand_data);
-
-                // ポンプ駆動
+                hand_data[1] = 250.0;
                 hand_data[2] = 1.0;
                 hand_service(hand_client, hand_request, hand_data);
+                rclcpp::sleep_for(300ms);
+
+                // // ポンプ駆動
+                // hand_data[2] = 1.0;
+                // hand_service(hand_client, hand_request, hand_data);
+                // rclcpp::sleep_for(300ms);
 
                 hand_data[0] = 120.0;
                 hand_service(hand_client, hand_request, hand_data);
-                rclcpp::sleep_for(100ms);
+                rclcpp::sleep_for(300ms);
 
                 hand_data[0] = 210.0;
                 hand_service(hand_client, hand_request, hand_data);
@@ -449,12 +451,12 @@ int main(int argc, char * argv[]){
                 // 吸引軸の動作量生成
                 create_eef_motion(hand_data, radius, 1.0, "open");
                 hand_service(hand_client, hand_request, hand_data);
-                rclcpp::sleep_for(500ms);
+                rclcpp::sleep_for(300ms);
 
                 // キャッチ
                 create_eef_motion(hand_data, radius, 1.0, "close");
                 hand_service(hand_client, hand_request, hand_data);
-                rclcpp::sleep_for(500ms);
+                rclcpp::sleep_for(300ms);
 
                 // ポンプ停止
                 // create_eef_motion(hand_data, radius, 0.0, "close");
@@ -463,7 +465,7 @@ int main(int argc, char * argv[]){
                 // オブジェクトの把持
                 move_group.attachObject("tomato");
                 fruit_target_command_pub->publish(fruit_target_command);
-                rclcpp::sleep_for(500ms);
+                rclcpp::sleep_for(300ms);
 
                 // エフェクタ軸回転
                 joint_values = move_group.getCurrentJointValues();
@@ -487,7 +489,7 @@ int main(int argc, char * argv[]){
 
                 //　ハンドの把持を解除
                 hand_data[0] = 10.0;
-                hand_data[1] = 240.0;
+                hand_data[1] = 250.0;
                 hand_data[2] = 0.0;
                 hand_service(hand_client, hand_request, hand_data);
                 rclcpp::sleep_for(1s);

@@ -38,6 +38,7 @@ class HandRos2Serial(Node):
         self.previous_array = [0,0]
 
         # シリアル通信が問題なくできてるか確認用
+        self.hand_status = True
         self.i = 0
         self.j = 0
 
@@ -60,13 +61,15 @@ class HandRos2Serial(Node):
 
         return response
               
-    def hand_data_real_callback(self, request, response):
+    def hand_data_real_callback(self, request: EndEffectorControl.Request, response: EndEffectorControl.Response):
         self.goal_array[0] = request.cup
         self.goal_array[1] = request.hand
         self.goal_array[2] = request.pump
 
         # 角度変化が0.1度未満になったらTrueを返す
         response.status = self.calc_tolerance(0.1)
+        if self.hand_status == False:
+            response.status = False
         
         for i in range(len(self.previous_array)):
             self.previous_array[i] = self.current_array[i]
@@ -99,6 +102,7 @@ class HandRos2Serial(Node):
                 # self.ser.write("data get\r\n")
                 self.i = 0
                 self.j = self.j + 1
+                self.hand_status = True
 
             else:
                 print("No data recieved -{}-".format(self.i))
@@ -108,7 +112,13 @@ class HandRos2Serial(Node):
                 self.j = 0     
             
         except Exception as err:
-            print("exception has occured: {}".format(err))      
+            print("exception has occured: {}".format(err))     
+            
+        if self.i > 100:
+            self.hand_status = False
+            
+        if self.hand_status == False:
+            self.get_logger().info("hand communication broken!") 
             
 
 

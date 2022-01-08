@@ -18,6 +18,8 @@ class Intrinsics:
         self.ppy = None
         self.fx = None
         self.fy = None
+        self.coeffs = []
+        self.distortion_model = None
 
 def get_depth_at_pixel(depth_frame, pixel_x, pixel_y):
     return depth_frame.as_depth_frame().get_distance(round(pixel_x), round(pixel_y))
@@ -42,12 +44,29 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, mode, in
         vfov = 2*math.atan(intrinsics.height/(2*intrinsics.fy))
 
     if mode == "rs":
-        theta_x0 = math.atan(0.7* math.tan(hfov/2))
+        _intrinsics = rs.intrinsics()
+        _intrinsics.width = intrinsics.width
+        _intrinsics.height = intrinsics.height
+        _intrinsics.ppx = intrinsics.ppx
+        _intrinsics.ppy = intrinsics.ppy
+        _intrinsics.fx = intrinsics.fx
+        _intrinsics.fy = intrinsics.fy
+        # _intrinsics.model = rs.distortion.none
+        # _intrinsics.coeffs = [i for i in intrinsics.coeffs]
+        if intrinsics.distortion_model == 'plumb_bob':
+            _intrinsics.model = rs.distortion.brown_conrady
+        elif intrinsics.distortion_model == 'equidistant':
+            _intrinsics.model = rs.distortion.kannala_brandt4
+
+        result1 = rs.rs2_deproject_pixel_to_point(_intrinsics, [(x_1 + 1)*intrinsics.width/2, (y_1 + 1)*intrinsics.height/2], depth)
+        result2 = rs.rs2_deproject_pixel_to_point(_intrinsics, [(x_2 + 1)*intrinsics.width/2, (y_2 + 1)*intrinsics.height/2], depth)
         
-        theta_x_1 = math.atan(x_1*math.tan(theta_x0))
-        theta_x_2 = math.atan(x_2*math.tan(theta_x0))
-        theta_y_1 = math.atan(y_1*math.tan(vfov/2))
-        theta_y_2 = math.atan(y_2*math.tan(vfov/2))
+        X_1 = result1[0]
+        X_2 = result2[0]
+        Y_1 = result1[1]
+        Y_2 = result2[1]
+        
+        
     elif mode == "azure":
         theta_x0 = math.atan(1/3* math.tan(hfov/2))
         
@@ -56,10 +75,11 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, mode, in
         theta_y_1 = math.atan(y_1*math.tan(vfov/2))
         theta_y_2 = math.atan(y_2*math.tan(vfov/2))
                 
-    X_1 = int(depth* math.tan(theta_x_1) )
-    X_2 = int(depth* math.tan(theta_x_2) )
-    Y_1 = int(depth* math.tan(theta_y_1) )
-    Y_2 = int(depth* math.tan(theta_y_2) )
+        X_1 = int(depth* math.tan(theta_x_1) )
+        X_2 = int(depth* math.tan(theta_x_2) )
+        Y_1 = int(depth* math.tan(theta_y_1) )
+        Y_2 = int(depth* math.tan(theta_y_2) )
+
 
     if abs(X_2 - X_1) > abs(Y_2 - Y_1):
         radius = abs((X_2 - X_1)/2)
@@ -70,13 +90,26 @@ def convert_depth_pixel_to_metric_coordinate(depth, x_1, x_2, y_1, y_2, mode, in
     X = int(depth + radius* math.tan(theta_x))
     Y = int((-1)* (depth + radius* math.tan(theta_y)))
     '''
-    X = int((X_1 + X_2) / 2)
-    Y = int((-1)*((Y_1 + Y_2) / 2))
 
-    
     Z = int(depth + radius)
     # print(depth)
-    
+    if mode == "rs":
+        result1 = rs.rs2_deproject_pixel_to_point(_intrinsics, [(x_1 + 1)*intrinsics.width/2, (y_1 + 1)*intrinsics.height/2], Z)
+        result2 = rs.rs2_deproject_pixel_to_point(_intrinsics, [(x_2 + 1)*intrinsics.width/2, (y_2 + 1)*intrinsics.height/2], Z)
+        X_1r = result1[0]
+        X_2r = result2[0]
+        Y_1r = result1[1]
+        Y_2r = result2[1]
+        
+    elif mode == "azure":
+        X_1r = int(Z* math.tan(theta_x_1) )
+        X_2r = int(Z* math.tan(theta_x_2) )
+        Y_1r = int(Z* math.tan(theta_y_1) )
+        Y_2r = int(Z* math.tan(theta_y_2) )        
+   
+    X = int((X_1r + X_2r) / 2)
+    Y = int((-1)*((Y_1r + Y_2r) / 2))      
+               
     return X, Y, Z, radius
 
 
