@@ -328,8 +328,8 @@ int main(int argc, char * argv[]){
             continue;
         }
 
-        // 前回の収穫座標との差が1cmしかない場合、収穫作業は行わない
-        else if (sqrt(pow(x - last_harvest_position[0], 2.0) + pow(y - last_harvest_position[1], 2.0) + pow(z - last_harvest_position[2], 2.0)) < 0.01){
+        // 前回の収穫座標との差が3cmしかない場合、収穫作業は行わない
+        else if (sqrt(pow(x - last_harvest_position[0], 2.0) + pow(y - last_harvest_position[1], 2.0) + pow(z - last_harvest_position[2], 2.0)) < 0.03){
             continue;
         }
         
@@ -440,9 +440,15 @@ int main(int argc, char * argv[]){
                 // hand_service(hand_client, hand_request, hand_data);
                 // rclcpp::sleep_for(300ms);
 
-                hand_data[0] = 120.0;
+                // 一旦仮把持
+                hand_data[0] = 100.0;
                 hand_service(hand_client, hand_request, hand_data);
                 rclcpp::sleep_for(300ms);
+
+                // hand_data[1] = 100.0;
+                // hand_service(hand_client, hand_request, hand_data);
+                // rclcpp::sleep_for(300ms);
+
 
                 hand_data[0] = 210.0;
                 hand_service(hand_client, hand_request, hand_data);

@@ -241,7 +241,9 @@ class TomatoDetector(Node):
         # self.get_logger().info("Publish detect fruits")
 
         
-    # この部分のカメラフレームを変更してみる
+    # トマトの座標系をカメラ座標系からアーム座標系へ変換
+    # TFの更新が異常に遅く、この部分が現状最も大きな課題
+    # lookup_transformがかなり前の位置関係を取得してくる
     def transform_tomato_position(self, x, y, z, mode):
         if mode == 'rs':
             camera_frame = self.camera_frame
