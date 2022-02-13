@@ -127,8 +127,8 @@ class HandRos2Serial(Node):
     def calc_tolerance(self, tolerance):
         differ = 0
         for i in range(2):
-            if differ < abs(self.current_array[i] - self.previous_array[i]):
-                differ = abs(self.current_array[i] - self.previous_array[i])
+            if differ < abs(self.current_array[i] - self.goal_array[i]):
+                differ = abs(self.current_array[i] - self.goal_array[i])
         
         return True if differ < tolerance else False
 

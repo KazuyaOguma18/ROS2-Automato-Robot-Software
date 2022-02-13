@@ -115,7 +115,7 @@ void hand_service(rclcpp::Client<harvest_studio_msg::srv::EndEffectorControl>::S
     while (!hand_status){
         // 1秒ごとに制御信号を送信してハンド側の状態を監視する
         auto result = hand_client->async_send_request(hand_request, std::bind(&hand_callback_response, std::placeholders::_1));
-        rclcpp::sleep_for(1s);
+        rclcpp::sleep_for(10ms);
         // RCLCPP_INFO(rclcpp::get_logger("EndEffector Control"), "result : false");
         // hand_status = result.get()->status;
     }
@@ -152,6 +152,40 @@ moveit_msgs::msg::CollisionObject addTomato_object(std::string planning_frame,
 
     collision_object.primitives.push_back(primitive);
     collision_object.primitive_poses.push_back(tomato_pose);
+    collision_object.operation = collision_object.ADD;
+
+    // Now, let's add the collision object into the world
+    return collision_object;
+}
+
+moveit_msgs::msg::CollisionObject addTomato_stem_object(std::string planning_frame,
+                                                    double x, double y, double z, double radius){
+
+    moveit_msgs::msg::CollisionObject collision_object;
+    collision_object.header.frame_id = planning_frame;
+
+    // The id of the object is used to identify it.
+    collision_object.id = "tomato_stem";
+
+    // Define tomato(sphere) to add to the world
+    shape_msgs::msg::SolidPrimitive primitive;
+    primitive.type = primitive.CYLINDER;
+    primitive.dimensions.resize(2);
+    primitive.dimensions[0] = radius/2;
+    primitive.dimensions[1] = 0.01;
+
+    // Define the pose for a tomato(sphere)
+    geometry_msgs::msg::Pose pose;
+    pose.position.x = x;
+    pose.position.y = y;
+    pose.position.z = z + radius;
+    pose.orientation.x = 0.0;
+    pose.orientation.y = 0.0;
+    pose.orientation.z = 0.0;
+    pose.orientation.w = 1.0;
+
+    collision_object.primitives.push_back(primitive);
+    collision_object.primitive_poses.push_back(pose);
     collision_object.operation = collision_object.ADD;
 
     // Now, let's add the collision object into the world
