@@ -345,6 +345,7 @@ int main(int argc, char * argv[]){
         //plannig_scene_interface.applyCollisionObject(addTomato_object(move_group.getPlanningFrame(), x, y, z, radius));
         rclcpp::sleep_for(500ms);
         plannig_scene_interface.applyCollisionObject(addTomato_object(move_group.getPlanningFrame(), x, y, z, radius));
+        plannig_scene_interface.applyCollisionObject(addTomato_stem_object(move_group.getPlanningFrame(), x, y, z, radius));
 
         // planning_scene_pub->publish(plannig_scene_interface);
 
