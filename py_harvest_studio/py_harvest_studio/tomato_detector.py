@@ -219,27 +219,6 @@ class TomatoDetector(Node):
         if not x:
             return
 
-
-        # for i in range(len(x)):    
-        #     fruit_position_x.append(x[i])
-        #     fruit_position_y.append(y[i])
-        #     fruit_position_z.append(z[i])
-        #     fruit_radius.append(radius[i]* 0.001)
-        #     """
-        #     fruit_position_x.append(x[i]*0.001)
-        #     fruit_position_y.append(y[i]*0.001)
-        #     fruit_position_z.append(z[i]*0.001)
-        #     fruit_radius.append(radius[i]*0.001)
-        #     """
-        # # 得られた位置情報をpublish
-        # pos_data = FruitDataList()
-        # pos_data.x = fruit_position_x
-        # pos_data.y = fruit_position_y
-        # pos_data.z = fruit_position_z
-        # pos_data.radius = fruit_radius
-        # self.publisher_.publish(pos_data)
-        # self.get_logger().info("Publish detect fruits")
-
         
     # トマトの座標系をカメラ座標系からアーム座標系へ変換
     # TFの更新が異常に遅く、この部分が現状最も大きな課題
@@ -387,7 +366,7 @@ class TomatoDetector(Node):
             
             x_tmp = []
             y_tmp = []
-            z_tmp = []          
+            z_tmp = []
 
             #image = Image.fromarray(np.uint8(color_image))
             # the array based representation of the image will be used later in order to prepare the
@@ -413,6 +392,7 @@ class TomatoDetector(Node):
             (boxes, scores, classes, num_detections) = sess.run(
                 [boxes, scores, classes, num_detections],
                 feed_dict={image_tensor: image_np_expanded})                                     
+
             # Visualization of the results of a detection.
             # print('-----------------------------------------------------------------------')
             boxes, names_show = vis_util.visualize_boxes_and_labels_on_image_array(

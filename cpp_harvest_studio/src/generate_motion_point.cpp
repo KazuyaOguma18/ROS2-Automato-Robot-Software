@@ -158,6 +158,8 @@ moveit_msgs::msg::CollisionObject addTomato_object(std::string planning_frame,
     return collision_object;
 }
 
+
+// トマトを上からはたき落とさないようにトマトの少し上に円盤を設置
 moveit_msgs::msg::CollisionObject addTomato_stem_object(std::string planning_frame,
                                                     double x, double y, double z, double radius){
 
