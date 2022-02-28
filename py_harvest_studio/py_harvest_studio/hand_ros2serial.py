@@ -1,6 +1,8 @@
 # ハンドへの信号をシリアル化して行うノード
 # ros2 service call /hand_data harvest_studio_msg/srv/EndEffectorControl "{hand: 10.0, cup: 10.0, pump: 0.0}"
 
+from cProfile import label
+from pydoc import cli
 import serial
 import rclpy
 from rclpy import handle
@@ -11,6 +13,9 @@ from rcl_interfaces.msg import ParameterType
 from harvest_studio_msg.srv import EndEffectorControl
 from std_msgs.msg import Int32MultiArray
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 # subscribe from generate_motion_point
 # substitute global list from ros message
 
@@ -20,7 +25,9 @@ class HandRos2Serial(Node):
         super().__init__('hand_ros2serial')
         # 動作モードの取得 : demo or real
         self.declare_parameter('hand_control_mode', 'demo')
+        self.declare_parameter('plot_mode', 'false')
         self.control_mode = self.get_parameter('hand_control_mode')
+        self.plot_mode = self.get_parameter('plot_mode')
 
 
         if str(self.control_mode.value) == 'demo':
@@ -29,7 +36,7 @@ class HandRos2Serial(Node):
         elif str(self.control_mode.value) == 'real':
             self.srv = self.create_service(EndEffectorControl, 'hand_data', self.hand_data_real_callback)
             self.serial_publisher = self.create_publisher(Int32MultiArray, 'hand_current_status', 10)
-            self.timer_ = self.create_timer(0.01, self.timer_callback)
+            self.timer_ = self.create_timer(0.001, self.timer_callback)
             self.ser = serial.Serial("/dev/ttyUSB-XBee", 115200, timeout=0.1)
             
 
@@ -37,6 +44,16 @@ class HandRos2Serial(Node):
         self.current_array = [0,0]
         self.previous_array = [0,0]
 
+        # plot
+        self.cup_plt = []
+        self.hand_plt = []
+        self.t = []
+        if self.plot_mode.value == True:
+            self.fig, self.ax = plt.subplots()
+            self.ax.set_xlabel('t')
+            self.ax.set_ylabel('angle')
+            self.ax.grid()
+            self.x_lim = [0, 500]
         # シリアル通信が問題なくできてるか確認用
         self.hand_status = True
         self.i = 0
@@ -46,6 +63,7 @@ class HandRos2Serial(Node):
         self.tolerance = 0
         
         print("control mode: {}".format(self.control_mode.value))
+        print("plot mode: {}".format(self.plot_mode.value))
 
 
 
@@ -119,7 +137,28 @@ class HandRos2Serial(Node):
             
         if self.hand_status == False:
             self.get_logger().info("hand communication broken!") 
-            
+
+        if self.plot_mode.value == True:
+            plt.cla()
+            self.cup_plt.append(self.current_array[0])
+            self.hand_plt.append(self.current_array[1])
+            self.t.append(len(self.cup_plt))
+            # np.delete(self.cup_plt, 0, 0)
+            # np.delete(self.hand_plt, 0, 0)
+
+            if len(self.t) > 500:
+                self.x_lim[0] += 1
+                self.x_lim[1] += 1
+
+            cline, = self.ax.plot(self.t, self.cup_plt, color="red", label="cup")
+            hline, = self.ax.plot(self.t, self.hand_plt, color="blue", label="hand")
+            self.ax.legend(loc=0)
+            self.fig.tight_layout()
+            plt.xlim(self.x_lim[0], self.x_lim[1])
+            plt.pause(0.0001)
+            cline.remove()
+            hline.remove()
+
 
 
 
@@ -127,8 +166,8 @@ class HandRos2Serial(Node):
     def calc_tolerance(self, tolerance):
         differ = 0
         for i in range(2):
-            if differ < abs(self.current_array[i] - self.goal_array[i]):
-                differ = abs(self.current_array[i] - self.goal_array[i])
+            if differ < abs(self.current_array[i] - self.previous_array[i]):
+                differ = abs(self.current_array[i] - self.previous_array[i])
         
         return True if differ < tolerance else False
 

@@ -159,7 +159,8 @@ def launch_setup(context, *args, **kwargs):
         package='py_harvest_studio',
         executable='hand_ros2serial',
         parameters=[
-            {'hand_control_mode': 'real'}
+            {'hand_control_mode': 'demo'},
+            {'plot_mode': 'false'}
         ],
     )
 
