@@ -30,48 +30,50 @@ R03のポット栽培に適応したトマト自動収穫ロボットの動作�
     ```
 - ### 3.2 Install depencies
     ```bash
-    # Remember to source ros foxy environment settings first
     $ cd ~/ros2_ws/src/
     $ rosdep update
     $ rosdep install --from-paths . --ignore-src --rosdistro $ROS_DISTRO
+    # setup to hold usb device name
+    $ sudo cp ROS2-Automato-Robot-Software/setup/90-usb-serial-devices.rules /etc/udev/rules.d/
     ```
 
 - ### 3.3 Build ROS2-Automato-Robot-Software
     ```bash
-    # Remember to source ros foxy and moveit2 environment settings first
     $ cd ~/ros2_ws/
     $ colcon build
     $ colcon build --symlink-install
     ```
 
 ## 4. Package introduction 
-### 4.1 harvest_studio
+### 4.1 [harvest_studio](https://github.com/KazuyaOguma18/ROS2-Automato-Robot-Software/tree/main/harvest_studio)
 launchファイルが格納されているパッケージ
 
-### 4.2 harvest_studio_description
+### 4.2 [harvest_studio_description](https://github.com/KazuyaOguma18/ROS2-Automato-Robot-Software/tree/main/harvest_studio_description)
 自動収穫ロボットのフレーム情報が格納されているパッケージ
 
-### 4.3 cpp_harvest_studio
+### 4.3 [cpp_harvest_studio](https://github.com/KazuyaOguma18/ROS2-Automato-Robot-Software/tree/main/cpp_harvest_studio)
 C++で書かれたプログラムが格納されているパッケージ
 ・収穫動作生成
 ・把持・回転機構制御
 ・カメラ角制御
 ・Rvizに果実の検出状態表示
 
-### 4.4 py_harvest_studio
+### 4.4 [py_harvest_studio](https://github.com/KazuyaOguma18/ROS2-Automato-Robot-Software/tree/main/py_harvest_studio)
 Pythonで書かれたプログラムが格納されているパッケージ
 ・物体検出
 ・果実データ処理
 ・エンドエフェクタ制御（シリアル通信）
 
-### 4.5 xarm_ros2
+### 4.5 [xarm_ros2](https://github.com/KazuyaOguma18/ROS2-Automato-Robot-Software/tree/main/xarm_ros2)
 ロボットアームUFactory xArm 5 Liteの制御
+公式の[リポジトリ](https://github.com/xArm-Developer/xarm_ros2)を収穫ロボット用にいくつか書き換えてあります．
 
-### 4.6 STM32
+### 4.6 [STM32](https://github.com/KazuyaOguma18/ROS2-Automato-Robot-Software/tree/main/STM32)
 把持・回転機構に取り付けられているマイコンのSTM32に書き込まれているプログラム
 
 ### 4.7 calculation dummy_test_pkg
 テスト用のパッケージ
+意味あるコードはありません．
 
 ## 5. Question
 何か不明点等あれば，小熊(kzy.basect@gmail.com)まで質問してください．
