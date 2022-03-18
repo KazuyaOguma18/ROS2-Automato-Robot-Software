@@ -173,8 +173,8 @@ moveit_msgs::msg::CollisionObject addTomato_stem_object(std::string planning_fra
     shape_msgs::msg::SolidPrimitive primitive;
     primitive.type = primitive.CYLINDER;
     primitive.dimensions.resize(2);
-    primitive.dimensions[0] = radius/2;
-    primitive.dimensions[1] = 0.01;
+    primitive.dimensions[1] = radius;
+    primitive.dimensions[0] = 0.01;
 
     // Define the pose for a tomato(sphere)
     geometry_msgs::msg::Pose pose;
