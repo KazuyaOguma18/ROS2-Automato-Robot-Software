@@ -75,5 +75,20 @@ Pythonで書かれたプログラムが格納されているパッケージ
 テスト用のパッケージ
 意味あるコードはありません．
 
-## 5. Question
+## 5. Usage
+Azure kinectとdynamixelのUSBケーブルをPCに接続するのを忘れずにおねがいします．
+
+    Terminal 1
+    # ポット把持回転機構内のRaspberry Piの起動
+    $ ssh ubuntu@192.168.1.61
+    $ ikedalab #password
+    $ ros2 launch harvest_studio_rasp harvest_studio_rasp_launch.py
+
+    Terminal2
+    # 実機の自動収穫動作
+    $ ros2 launch harvest_studio automatic_harvesting_launch.py
+    
+
+
+## 6. Question
 何か不明点等あれば，小熊(kzy.basect@gmail.com)まで質問してください．
